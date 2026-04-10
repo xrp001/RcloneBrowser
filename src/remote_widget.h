@@ -10,7 +10,8 @@ class RemoteWidget : public QWidget {
 
 public:
   RemoteWidget(IconCache *icons, const QString &remote, bool isLocal,
-               bool isGoogle, QWidget *parent = nullptr);
+               bool isGoogle, const QString &remoteType,
+               QWidget *parent = nullptr);
   ~RemoteWidget();
 
 signals:
@@ -21,4 +22,5 @@ signals:
 
 private:
   Ui::RemoteWidget ui;
+  QString mRemoteType;
 };

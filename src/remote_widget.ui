@@ -172,6 +172,16 @@
            </widget>
           </item>
           <item>
+           <widget class="QToolButton" name="buttonHead">
+            <property name="text">
+             <string>&amp;Head</string>
+            </property>
+            <property name="toolButtonStyle">
+             <enum>Qt::ToolButtonTextBesideIcon</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QToolButton" name="buttonExport">
             <property name="text">
              <string>E&amp;xport...</string>
@@ -376,6 +386,14 @@
    </property>
    <property name="toolTip">
     <string>rclone link</string>
+   </property>
+  </action>
+  <action name="head">
+   <property name="text">
+    <string>Head Object</string>
+   </property>
+   <property name="toolTip">
+    <string>rclone lsjson --stat --metadata</string>
    </property>
   </action>
  </widget>

@@ -17,7 +17,7 @@ JobOptions::JobOptions()
       dontUpdateModified(false), maxDepth(0), deleteExcluded(false),
       isFolder(false) {}
 
-const qint32 JobOptions::classVersion = 3;
+const qint32 JobOptions::classVersion = 4;
 
 JobOptions::~JobOptions() {}
 
@@ -136,6 +136,15 @@ QStringList JobOptions::getOptions() const {
   if (!extra.isEmpty()) {
     for (auto arg : extra.split(' ')) {
       list << arg;
+    }
+  }
+
+  if (!uploadHeaders.isEmpty()) {
+    for (auto line : uploadHeaders.split('\n')) {
+      QString header = line.trimmed();
+      if (!header.isEmpty()) {
+        list << "--header-upload" << header;
+      }
     }
   }
 

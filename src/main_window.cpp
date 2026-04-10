@@ -239,7 +239,8 @@ MainWindow::MainWindow() {
     bool isLocal = type == "local";
     bool isGoogle = type == "drive";
 
-    auto remote = new RemoteWidget(&mIcons, name, isLocal, isGoogle, ui.tabs);
+    auto remote =
+        new RemoteWidget(&mIcons, name, isLocal, isGoogle, type, ui.tabs);
     QObject::connect(remote, &RemoteWidget::addMount, this,
                      &MainWindow::addMount);
     QObject::connect(remote, &RemoteWidget::addStream, this,
@@ -432,7 +433,7 @@ void MainWindow::rcloneGetVersion() {
           };
 #endif
 
-          QStringList lines = version.split("\n", QString::SkipEmptyParts);
+          QStringList lines = version.split("\n", Qt::SkipEmptyParts);
           QString rclone_info2;
           QString rclone_info3;
 
@@ -1214,7 +1215,14 @@ void MainWindow::addStream(const QString &remote, const QString &stream) {
   ui.jobs->insertWidget(1, line);
   ui.tabs->setTabText(1, QString("Jobs (%1)").arg(++mJobCount));
 
-  player->start(stream, QProcess::ReadOnly);
+  #if defined(Q_OS_WIN)
+  player->setProgram("cmd");
+  player->setArguments(QStringList() << "/C" << stream);
+  #else
+  player->setProgram("/bin/sh");
+  player->setArguments(QStringList() << "-c" << stream);
+  #endif
+  player->start(QProcess::ReadOnly);
   UseRclonePassword(rclone);
   rclone->start(GetRclone(),
                 QStringList() << "cat" << GetRcloneConf() << remote,

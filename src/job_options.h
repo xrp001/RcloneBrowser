@@ -54,6 +54,7 @@ public:
   bool deleteExcluded;
   QString excluded;
   QString extra;
+  QString uploadHeaders;
   QString source;
   QString dest;
   bool isFolder;

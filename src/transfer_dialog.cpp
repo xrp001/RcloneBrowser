@@ -108,6 +108,13 @@ TransferDialog::TransferDialog(bool isDownload, bool isDrop,
   QObject::connect(ui.buttonBox, &QDialogButtonBox::rejected, this,
                    &QDialog::reject);
 
+  QObject::connect(ui.rbCopy, &QRadioButton::toggled, this,
+                   &TransferDialog::updateUploadMetadataVisibility);
+  QObject::connect(ui.rbMove, &QRadioButton::toggled, this,
+                   &TransferDialog::updateUploadMetadataVisibility);
+  QObject::connect(ui.rbSync, &QRadioButton::toggled, this,
+                   &TransferDialog::updateUploadMetadataVisibility);
+
   QObject::connect(ui.buttonSourceFile, &QToolButton::clicked, this, [=]() {
     QString file = QFileDialog::getOpenFileName(this, "Choose file to upload");
     if (!file.isEmpty()) {
@@ -287,6 +294,8 @@ TransferDialog::TransferDialog(bool isDownload, bool isDrop,
       };
     };
   }
+
+  updateUploadMetadataVisibility();
 }
 
 TransferDialog::~TransferDialog() {
@@ -410,6 +419,7 @@ JobOptions *TransferDialog::getJobOptions() {
 
   mJobOptions->excluded = ui.textExclude->toPlainText().trimmed();
   mJobOptions->extra = ui.textExtra->text().trimmed();
+  mJobOptions->uploadHeaders = ui.textUploadHeaders->toPlainText().trimmed();
 
   mJobOptions->source = ui.textSource->text();
   mJobOptions->dest = ui.textDest->text();
@@ -485,12 +495,21 @@ void TransferDialog::putJobOptions() {
 
   ui.textExclude->setPlainText(mJobOptions->excluded);
   ui.textExtra->setText(mJobOptions->extra);
+  ui.textUploadHeaders->setPlainText(mJobOptions->uploadHeaders);
 
   ui.textSource->setText(mJobOptions->source);
   ui.textDest->setText(mJobOptions->dest);
   ui.textDescription->setText(mJobOptions->description);
   // DDBB
   ui.checkisDriveSharedWithMe->setChecked(mJobOptions->DriveSharedWithMe);
+
+  updateUploadMetadataVisibility();
+}
+
+void TransferDialog::updateUploadMetadataVisibility() {
+  bool visible = !mIsDownload && !ui.rbSync->isChecked();
+  ui.labelUploadHeaders->setVisible(visible);
+  ui.textUploadHeaders->setVisible(visible);
 }
 
 void TransferDialog::done(int r) {

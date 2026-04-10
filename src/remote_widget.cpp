@@ -8,8 +8,9 @@
 #include "utils.h"
 
 RemoteWidget::RemoteWidget(IconCache *iconCache, const QString &remote,
-                           bool isLocal, bool isGoogle, QWidget *parent)
-    : QWidget(parent) {
+                           bool isLocal, bool isGoogle,
+                           const QString &remoteType, QWidget *parent)
+    : QWidget(parent), mRemoteType(remoteType) {
   ui.setupUi(this);
 
 QString root = isLocal ? "/" : QString();
@@ -45,6 +46,7 @@ QString root = isLocal ? "/" : QString();
   ui.getTree->setIcon(style->standardIcon(QStyle::SP_FileDialogListView));
   ui.export_->setIcon(style->standardIcon(QStyle::SP_FileDialogDetailedView));
   ui.link->setIcon(style->standardIcon(QStyle::SP_FileLinkIcon));
+  ui.head->setIcon(style->standardIcon(QStyle::SP_MessageBoxInformation));
 
   ui.buttonRefresh->setDefaultAction(ui.refresh);
   ui.buttonMkdir->setDefaultAction(ui.mkdir);
@@ -57,6 +59,7 @@ QString root = isLocal ? "/" : QString();
   ui.buttonDownload->setDefaultAction(ui.download);
   ui.buttonTree->setDefaultAction(ui.getTree);
   ui.buttonLink->setDefaultAction(ui.link);
+  ui.buttonHead->setDefaultAction(ui.head);
   ui.buttonSize->setDefaultAction(ui.getSize);
   ui.buttonExport->setDefaultAction(ui.export_);
 
@@ -89,6 +92,7 @@ QString root = isLocal ? "/" : QString();
 
         bool topLevel = model->isTopLevel(index);
         bool isFolder = model->isFolder(index);
+        bool isS3Remote = mRemoteType.startsWith("s3", Qt::CaseInsensitive);
 
         QDir path;
         if (model->isLoading(index)) {
@@ -100,6 +104,7 @@ QString root = isLocal ? "/" : QString();
           ui.stream->setDisabled(true);
           ui.upload->setDisabled(true);
           ui.download->setDisabled(true);
+          ui.head->setDisabled(true);
           ui.checkBoxShared->setDisabled(true);
           path = model->path(model->parent(index));
         } else {
@@ -130,6 +135,8 @@ QString root = isLocal ? "/" : QString();
 #endif
 
           ui.stream->setDisabled(isFolder);
+          ui.head->setDisabled(topLevel || isFolder || !isS3Remote ||
+                               driveShared);
           ui.checkBoxShared->setDisabled(!isGoogle);
           path = model->path(index);
         }
@@ -391,6 +398,34 @@ QString root = isLocal ? "/" : QString();
     progress.exec();
   });
 
+  QObject::connect(ui.head, &QAction::triggered, this, [=]() {
+    auto settings = GetSettings();
+    bool driveShared = ui.checkBoxShared->checkState();
+    (driveShared ? settings->setValue("Settings/driveShared", Qt::Checked)
+                 : settings->setValue("Settings/driveShared", Qt::Unchecked));
+
+    QModelIndex index = ui.tree->selectionModel()->selectedRows().front();
+
+    QString path = model->path(index).path();
+    QString pathMsg = isLocal ? QDir::toNativeSeparators(path) : path;
+
+    QProcess process;
+    UseRclonePassword(&process);
+    process.setProgram(GetRclone());
+    process.setArguments(QStringList()
+                         << "lsjson" << "--stat" << "--metadata"
+                         << GetRcloneConf() << GetDriveSharedWithMe()
+                         << GetDefaultRcloneOptionsList()
+                         << remote + ":" + path);
+    process.setProcessChannelMode(QProcess::MergedChannels);
+    ProgressDialog progress("Head Object", "Fetching object metadata...",
+                            pathMsg, &process, this, false);
+    progress.expand();
+    progress.allowToClose();
+    progress.resize(1000, 600);
+    progress.exec();
+  });
+
   QObject::connect(ui.upload, &QAction::triggered, this, [=]() {
     auto settings = GetSettings();
     bool driveShared = ui.checkBoxShared->checkState();
@@ -601,6 +636,7 @@ QString root = isLocal ? "/" : QString();
         menu.addAction(ui.upload);
         menu.addAction(ui.download);
         menu.addAction(ui.link);
+        menu.addAction(ui.head);
         menu.exec(ui.tree->viewport()->mapToGlobal(pos));
       });
 

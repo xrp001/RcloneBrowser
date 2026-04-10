@@ -1,22 +1,18 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 # x86_64 build on CentOS 7.7
-  # gcc 7 installed
-  # sudo yum install -y centos-release-scl
-  # sudo yum install -y devtoolset-7-gcc*
-  # run below command before build
-  # scl enable devtoolset-7 bash
+#   gcc 7 installed
+#   sudo yum install -y centos-release-scl
+#   sudo yum install -y devtoolset-7-gcc*
+#   run below command before build
+#   scl enable devtoolset-7 bash
 
-  # newer cmake is required than one included in CentOS 7
-  # download from http://www.cmake.org/download
-  # sudo mkdir /opt/cmake
-  # sudo sh cmake-$version.$build-Linux-x86_64.sh --prefix=/opt/cmake
-
-  if [ $(arch) = "x86_64" ]; then
-    CMAKE="/opt/cmake/bin/cmake"
-  fi
+# newer cmake is required than one included in CentOS 7
+# download from http://www.cmake.org/download
+# sudo mkdir /opt/cmake
+# sudo sh cmake-$version.$build-Linux-x86_64.sh --prefix=/opt/cmake
 
 # i686 build on Ubuntu 16.04 LTS
 
@@ -35,24 +31,47 @@ set -e
 # and add to build env
 # export LD_LIBRARY_PATH="/opt/openssl-1.1.1/lib/:$LD_LIBRARY_PATH"
 
-if [ "$1" = "SIGN" ]; then
+ARCH="$(arch)"
+
+if [ "${1:-}" = "SIGN" ]; then
   export SIGN="1"
 fi
 
-# check gcc version on Centos
-if [ $(arch) = "x86_64" ]; then
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "required command not found: $1" >&2
+    exit 1
+  fi
+}
+
+if [ -x /opt/cmake/bin/cmake ]; then
+  CMAKE="/opt/cmake/bin/cmake"
+else
+  require_command cmake
+  CMAKE="$(command -v cmake)"
+fi
+
+require_command git
+require_command gcc
+require_command make
+require_command linuxdeploy
+require_command linuxdeploy-plugin-qt
+require_command linuxdeploy-plugin-appimage
+
+# check gcc version on CentOS if using devtoolset style build environment
+if [ "$ARCH" = "x86_64" ]; then
   currentver="$(gcc -dumpversion)"
-  if [ "${currentver:0:1}" -lt "7"  ]; then
+  if [ "${currentver:0:1}" -lt "7" ] && [ -f /etc/centos-release ]; then
     echo "gcc version 7 or newer required"
-    echo "on Cetos 7 run"
+    echo "on CentOS 7 run"
     echo "scl enable devtoolset-7 bash"
-    exit
- fi
+    exit 1
+  fi
 fi
 
 # building AppImage in temporary directory to keep system clean
 # use RAM disk if possible (as in: not building on CI system like Travis, and RAM disk is available)
-if [ "$CI" == "" ] && [ -d /dev/shm ]; then
+if [ "${CI:-}" = "" ] && [ -d /dev/shm ]; then
   TEMP_BASE=/dev/shm
 else
   TEMP_BASE=/tmp
@@ -65,6 +84,22 @@ VERSION=$(cat "$ROOT"/VERSION)-$(git rev-parse --short HEAD)
 export VERSION=$VERSION
 BUILD="$ROOT"/build
 TARGET=rclone-browser-$VERSION.AppImage
+
+case "$ARCH" in
+  armv7l)
+    RELEASE_TARGET="$ROOT/release/rclone-browser-$VERSION-raspberrypi-armhf.AppImage"
+    ;;
+  i686)
+    RELEASE_TARGET="$ROOT/release/rclone-browser-$VERSION-linux-i386.AppImage"
+    ;;
+  x86_64)
+    RELEASE_TARGET="$ROOT/release/rclone-browser-$VERSION-linux-x86_64.AppImage"
+    ;;
+  *)
+    echo "unsupported architecture: $ARCH" >&2
+    exit 1
+    ;;
+esac
 
 # clean AppImage temporary folder
 if [ -d "$TEMP_BASE/$TARGET" ]; then
@@ -82,34 +117,26 @@ mkdir "$BUILD"
 mkdir -p "$ROOT"/release
 
 # clean current version previous build
-if [ $(arch) = "armv7l" ] && [ -f "$ROOT"/release/rclone-browser-"$VERSION"-armhf.AppImage ]; then
-  rm "$ROOT"/release/rclone-browser-"$VERSION"-raspberrypi-armhf.AppImage
-fi
-
-if [ $(arch) = "i686" ] && [ -f "$ROOT"/release/rclone-browser-"$VERSION"-i386.AppImage ]; then
-  rm "$ROOT"/release/rclone-browser-"$VERSION"-linux-i386.AppImage
-fi
-
-if [ $(arch) = "x86_64" ] && [ -f "$ROOT"/release/rclone-browser-"$VERSION"-x86_64.AppImage ]; then
-  rm "$ROOT"/release/rclone-browser-"$VERSION"-linux-x86_64.AppImage
+if [ -f "$RELEASE_TARGET" ]; then
+  rm "$RELEASE_TARGET"
 fi
 
 # build and install to temporary AppDir folder
 cd "$BUILD"
 
-if [ $(arch) = "armv7l" ]; then
+if [ "$ARCH" = "armv7l" ]; then
   # more threads need swap on 1GB RAM RPi
-  cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=/usr
   make -j 2
 fi
 
-if [ $(arch) = "x86_64" ]; then
+if [ "$ARCH" = "x86_64" ]; then
   "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=/usr
   make --jobs=$(nproc --all)
 fi
 
-if [ $(arch) = "i686" ]; then
-  cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+if [ "$ARCH" = "i686" ]; then
+  "$CMAKE" .. -DCMAKE_INSTALL_PREFIX=/usr
   make --jobs=$(nproc --all)
 fi
 
@@ -132,35 +159,26 @@ cp "$ROOT"/LICENSE "$TEMP_BASE"/"$TARGET"/AppDir/License.txt
 linuxdeploy --appdir AppDir --desktop-file=AppDir/usr/share/applications/rclone-browser.desktop --plugin qt
 #linuxdeploy-plugin-qt --appdir AppDir
 
-if [ $(arch) != "armv7l" ]
-then
+if [ "$ARCH" != "armv7l" ]; then
   # we add openssl 1.1.1 libs needed for distros still using openssl 1.0
-  cp /opt/openssl-1.1.1/lib/libssl.so.1.1 ./AppDir/usr/bin/
-  cp /opt/openssl-1.1.1/lib/libcrypto.so.1.1 ./AppDir/usr/bin/
+  if [ -f /opt/openssl-1.1.1/lib/libssl.so.1.1 ] && [ -f /opt/openssl-1.1.1/lib/libcrypto.so.1.1 ]; then
+    cp /opt/openssl-1.1.1/lib/libssl.so.1.1 ./AppDir/usr/bin/
+    cp /opt/openssl-1.1.1/lib/libcrypto.so.1.1 ./AppDir/usr/bin/
+  else
+    echo "warning: OpenSSL 1.1 runtime libraries not found under /opt/openssl-1.1.1/lib/; skipping bundled OpenSSL copy" >&2
+  fi
 fi
 
 # https://github.com/linuxdeploy/linuxdeploy-plugin-appimage
 linuxdeploy-plugin-appimage --appdir=AppDir
 
-# raspberry pi build
-if [ $(arch) = "armv7l" ]; then
-  rename 's/armhf/raspberrypi-armhf/' Rclone_Browser*
-  rename 's/Rclone_Browser/rclone-browser/' Rclone_Browser*
+GENERATED_APPIMAGE="$(find . -maxdepth 1 -type f -name '*.AppImage' | head -n 1)"
+if [ -z "$GENERATED_APPIMAGE" ]; then
+  echo "AppImage was not generated" >&2
+  exit 1
 fi
 
-# x86 build
-if [ $(arch) = "i686" ]; then
-  rename 's/i386/linux-i386/' Rclone_Browser*
-  rename 's/Rclone_Browser/rclone-browser/' Rclone_Browser*
-fi
-
-# x86_64 build
-if [ $(arch) = "x86_64" ]; then
-  rename x86_64 linux-x86_64 Rclone_Browser*
-  rename Rclone_Browser rclone-browser Rclone_Browser*
-fi
-
-cp ./*AppImage "$ROOT"/release/
+cp "$GENERATED_APPIMAGE" "$RELEASE_TARGET"
 
 # clean AppImage temporary folder
 cd ..

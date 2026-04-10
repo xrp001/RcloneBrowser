@@ -22,6 +22,9 @@ public:
 
   JobOptions *getJobOptions();
 
+private slots:
+  void updateUploadMetadataVisibility();
+
 private:
   Ui::TransferDialog ui;
 

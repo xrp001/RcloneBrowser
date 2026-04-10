@@ -189,6 +189,27 @@
            <widget class="QLineEdit" name="textExtra"/>
           </item>
           <item>
+           <widget class="QLabel" name="labelUploadHeaders">
+            <property name="toolTip">
+             <string>One header per line. Each line will be passed as --header-upload &lt;value&gt;.</string>
+            </property>
+            <property name="text">
+             <string>Upload metadata headers:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPlainTextEdit" name="textUploadHeaders">
+            <property name="toolTip">
+             <string>One header per line, for example:
+x-amz-meta-snowball-auto-extract:true</string>
+            </property>
+            <property name="tabChangesFocus">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_15">
             <property name="text">
              <string>Task description</string>
