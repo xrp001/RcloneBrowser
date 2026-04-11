@@ -1,4 +1,11 @@
 # Change Log
+## [1.8.3][1.8.3] - 2026-04-11
+-   NEW: support upload object tags with multiple entries and optional localtime tag
+-   NEW: support direct S3 object tags viewing and management from the remote browser
+-   NEW: added a unified "Tags" action with improved dialog-based tags display and editing
+-   changed About information to show version 1.8.3, current maintainer xrp001 and the new project page
+-   bunch of usual small tweaks and fixes
+
 ## [1.8.0][1.8.0] - 2020-02-17
 -   NEW: http(s) proxy configuration for rclone
 -   NEW: remotes icons size option selector
@@ -125,6 +132,7 @@
 -   Mount and unmount folders on macOS and GNU/Linux
 -   Optionally minimizes to tray, with notifications when upload/download finishes
 
+[1.8.3]: https://github.com/xrp001/RcloneBrowser/releases/tag/1.8.3
 [1.8.0]: https://github.com/kapitainsky/RcloneBrowser/releases/tag/1.8.0
 [1.7.0]: https://github.com/kapitainsky/RcloneBrowser/releases/tag/1.7.0
 [1.6.0]: https://github.com/kapitainsky/RcloneBrowser/releases/tag/1.6.0

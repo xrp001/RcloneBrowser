@@ -396,6 +396,14 @@
     <string>rclone lsjson --stat --metadata</string>
    </property>
   </action>
+  <action name="tags">
+   <property name="text">
+    <string>Tags</string>
+   </property>
+   <property name="toolTip">
+    <string>View and manage S3 object tags</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>buttonRefresh</tabstop>

@@ -4,6 +4,7 @@
 #include "item_model.h"
 #include "list_of_job_options.h"
 #include "progress_dialog.h"
+#include "s3_tags.h"
 #include "transfer_dialog.h"
 #include "utils.h"
 
@@ -47,6 +48,7 @@ QString root = isLocal ? "/" : QString();
   ui.export_->setIcon(style->standardIcon(QStyle::SP_FileDialogDetailedView));
   ui.link->setIcon(style->standardIcon(QStyle::SP_FileLinkIcon));
   ui.head->setIcon(style->standardIcon(QStyle::SP_MessageBoxInformation));
+  ui.tags->setIcon(style->standardIcon(QStyle::SP_DialogOpenButton));
 
   ui.buttonRefresh->setDefaultAction(ui.refresh);
   ui.buttonMkdir->setDefaultAction(ui.mkdir);
@@ -60,6 +62,12 @@ QString root = isLocal ? "/" : QString();
   ui.buttonTree->setDefaultAction(ui.getTree);
   ui.buttonLink->setDefaultAction(ui.link);
   ui.buttonHead->setDefaultAction(ui.head);
+  QToolButton *buttonTags = new QToolButton(ui.buttons);
+  buttonTags->setObjectName("buttonTags");
+  buttonTags->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  buttonTags->setDefaultAction(ui.tags);
+  ui.horizontalLayout_2->insertWidget(ui.horizontalLayout_2->indexOf(ui.buttonExport),
+                                      buttonTags);
   ui.buttonSize->setDefaultAction(ui.getSize);
   ui.buttonExport->setDefaultAction(ui.export_);
 
@@ -105,6 +113,7 @@ QString root = isLocal ? "/" : QString();
           ui.upload->setDisabled(true);
           ui.download->setDisabled(true);
           ui.head->setDisabled(true);
+          ui.tags->setDisabled(true);
           ui.checkBoxShared->setDisabled(true);
           path = model->path(model->parent(index));
         } else {
@@ -136,6 +145,8 @@ QString root = isLocal ? "/" : QString();
 
           ui.stream->setDisabled(isFolder);
           ui.head->setDisabled(topLevel || isFolder || !isS3Remote ||
+                               driveShared);
+          ui.tags->setDisabled(topLevel || isFolder || !isS3Remote ||
                                driveShared);
           ui.checkBoxShared->setDisabled(!isGoogle);
           path = model->path(index);
@@ -426,6 +437,142 @@ QString root = isLocal ? "/" : QString();
     progress.exec();
   });
 
+  QObject::connect(ui.tags, &QAction::triggered, this, [=]() {
+    auto settings = GetSettings();
+    bool driveShared = ui.checkBoxShared->checkState();
+    (driveShared ? settings->setValue("Settings/driveShared", Qt::Checked)
+                 : settings->setValue("Settings/driveShared", Qt::Unchecked));
+
+    QModelIndex index = ui.tree->selectionModel()->selectedRows().front();
+
+    QString path = model->path(index).path();
+    QString pathMsg = isLocal ? QDir::toNativeSeparators(path) : path;
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    S3ObjectTagsResult current = GetS3ObjectTags(remote, path);
+    QApplication::restoreOverrideCursor();
+
+    if (!current.ok) {
+      QMessageBox::warning(this, "Tags",
+                           QString("Failed to fetch S3 object tags for:\n%1\n\n%2")
+                               .arg(pathMsg)
+                               .arg(current.error));
+      return;
+    }
+
+    QDialog dialog(this);
+    QDialog *dialogPtr = &dialog;
+    dialog.setWindowTitle("Tags");
+    dialog.resize(720, 420);
+
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+
+    QWidget *header = new QWidget(&dialog);
+    QHBoxLayout *headerLayout = new QHBoxLayout(header);
+    headerLayout->setContentsMargins(0, 0, 0, 0);
+
+    QLabel *title =
+        new QLabel(QString("S3 object tags for <b>%1</b>").arg(pathMsg), &dialog);
+    title->setTextFormat(Qt::RichText);
+    title->setWordWrap(true);
+
+    QPushButton *setTagsButton = new QPushButton("Set Tags...", &dialog);
+    setTagsButton->setIcon(
+        style->standardIcon(QStyle::SP_FileDialogDetailedView));
+
+    headerLayout->addWidget(title, 1);
+    headerLayout->addWidget(setTagsButton, 0, Qt::AlignTop);
+    layout->addWidget(header);
+
+    QFrame *panel = new QFrame(&dialog);
+    panel->setFrameShape(QFrame::StyledPanel);
+    QVBoxLayout *panelLayout = new QVBoxLayout(panel);
+
+    QTableWidget *table = new QTableWidget(&dialog);
+    table->setColumnCount(2);
+    table->setHorizontalHeaderLabels(QStringList() << "Key" << "Value");
+    table->horizontalHeader()->setStretchLastSection(true);
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    table->verticalHeader()->setVisible(false);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setSelectionMode(QAbstractItemView::NoSelection);
+    table->setAlternatingRowColors(true);
+
+    QLabel *emptyLabel = new QLabel("No tags have been set for this object yet.",
+                                    &dialog);
+    emptyLabel->setAlignment(Qt::AlignCenter);
+    emptyLabel->setWordWrap(true);
+    emptyLabel->setStyleSheet(
+        "color: palette(mid); padding: 32px; font-size: 14px;");
+
+    auto refreshTagsView = [=](const QList<S3ObjectTag> &tags) {
+      table->clearContents();
+      table->setRowCount(tags.count());
+      for (int i = 0; i < tags.count(); ++i) {
+        table->setItem(i, 0, new QTableWidgetItem(tags[i].key));
+        table->setItem(i, 1, new QTableWidgetItem(tags[i].value));
+      }
+      bool hasTags = !tags.isEmpty();
+      table->setVisible(hasTags);
+      emptyLabel->setVisible(!hasTags);
+    };
+
+    panelLayout->addWidget(table);
+    panelLayout->addWidget(emptyLabel);
+    layout->addWidget(panel, 1);
+
+    QDialogButtonBox *buttons =
+        new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
+    layout->addWidget(buttons);
+
+    QList<S3ObjectTag> currentTags = current.tags;
+    refreshTagsView(currentTags);
+
+    QObject::connect(setTagsButton, &QPushButton::clicked, &dialog,
+                     [=, &currentTags]() {
+                       bool ok = false;
+                       QString text = QInputDialog::getMultiLineText(
+                           dialogPtr, "Set Tags",
+                           QString("Manage S3 object tags for:\n%1\n\nOne tag "
+                                   "per line: key:value")
+                               .arg(pathMsg),
+                           FormatS3ObjectTags(currentTags), &ok);
+                       if (!ok) {
+                         return;
+                       }
+
+                       S3ObjectTagsResult parsed =
+                           ParseS3ObjectTagsInput(text);
+                       if (!parsed.ok) {
+                         QMessageBox::warning(dialogPtr, "Set Tags",
+                                              parsed.error);
+                         return;
+                       }
+
+                       QApplication::setOverrideCursor(Qt::WaitCursor);
+                       S3ObjectTagsResult updated =
+                           SetS3ObjectTags(remote, path, parsed.tags);
+                       QApplication::restoreOverrideCursor();
+
+                       if (!updated.ok) {
+                         QMessageBox::warning(
+                             dialogPtr, "Set Tags",
+                             QString("Failed to set S3 object tags for:\n%1\n\n%2")
+                                 .arg(pathMsg)
+                                 .arg(updated.error));
+                         return;
+                       }
+
+                       currentTags = updated.tags;
+                       refreshTagsView(currentTags);
+                     });
+
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog,
+                     &QDialog::reject);
+    dialog.exec();
+  });
+
   QObject::connect(ui.upload, &QAction::triggered, this, [=]() {
     auto settings = GetSettings();
     bool driveShared = ui.checkBoxShared->checkState();
@@ -637,6 +784,7 @@ QString root = isLocal ? "/" : QString();
         menu.addAction(ui.download);
         menu.addAction(ui.link);
         menu.addAction(ui.head);
+        menu.addAction(ui.tags);
         menu.exec(ui.tree->viewport()->mapToGlobal(pos));
       });
 

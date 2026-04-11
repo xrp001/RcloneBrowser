@@ -62,6 +62,7 @@ set(OTHER
   pch.h
   utils.h
   job_options.h
+  s3_tags.h
 )
 
 set(SOURCE
@@ -81,6 +82,7 @@ set(SOURCE
   utils.cpp
   job_options.cpp
   list_of_job_options.cpp
+  s3_tags.cpp
 )
 
 if(WIN32)
