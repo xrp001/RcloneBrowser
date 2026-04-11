@@ -31,6 +31,38 @@ int main(int argc, char *argv[]) {
 
   auto settings = GetSettings();
 
+  if (!(settings->contains("Settings/language"))) {
+    settings->setValue("Settings/language", "en");
+  }
+
+  QTranslator translator;
+  const QString language = settings->value("Settings/language", "en").toString();
+  if (language == "zh_CN") {
+    const QString baseName = "rclonebrowser_zh_CN";
+    QStringList translationPaths;
+    translationPaths << QCoreApplication::applicationDirPath() + "/translations"
+                     << QCoreApplication::applicationDirPath()
+                     << QCoreApplication::applicationDirPath() +
+                            "/../share/rclone-browser/translations"
+                     << QCoreApplication::applicationDirPath() +
+                            "/../share/rclone-browser"
+                     << ":/translations";
+
+#ifdef Q_OS_MACOS
+    translationPaths << QCoreApplication::applicationDirPath() +
+                            "/../Resources/translations"
+                     << QCoreApplication::applicationDirPath() +
+                            "/../Resources";
+#endif
+
+    for (const QString &path : translationPaths) {
+      if (translator.load(baseName, path)) {
+        app.installTranslator(&translator);
+        break;
+      }
+    }
+  }
+
   // initialize proxy settings
   if (!(settings->contains("Settings/useProxy"))) {
     settings->setValue("Settings/useProxy", "false");

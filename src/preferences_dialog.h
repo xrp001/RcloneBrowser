@@ -33,6 +33,7 @@ public:
   bool getShowHidden() const;
   bool getDarkMode() const;
   QString getIconSize() const;
+  QString getLanguage() const;
 
   bool getUseProxy() const;
   QString getHttpProxy() const;

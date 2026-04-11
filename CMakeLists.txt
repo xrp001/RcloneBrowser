@@ -8,6 +8,7 @@ if(WIN32)
 endif()
 
 find_package(Qt5Widgets REQUIRED)
+find_package(Qt5LinguistTools REQUIRED)
 if(WIN32)
   find_package(Qt5WinExtras REQUIRED)
 elseif(APPLE)

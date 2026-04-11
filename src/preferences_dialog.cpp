@@ -6,21 +6,22 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
 
   QObject::connect(ui.rcloneBrowse, &QPushButton::clicked, this, [=]() {
     QString rclone = QFileDialog::getOpenFileName(
-        this, "Select rclone executable", ui.rclone->text());
+        this, tr("Select rclone executable"), ui.rclone->text());
     if (rclone.isEmpty()) {
       return;
     }
 
     if (!QFileInfo(rclone).isExecutable()) {
-      QMessageBox::critical(this, "Error",
-                            QString("File %1 is not executable").arg(rclone));
+      QMessageBox::critical(this, tr("Error"),
+                            tr("File %1 is not executable").arg(rclone));
       return;
     }
 
     if (QFileInfo(rclone) == QFileInfo(qApp->applicationFilePath())) {
-      QMessageBox::critical(this, "Error",
-                            "You selected RcloneBrowser executable!\nPlease "
-                            "select rclone executable instead.");
+      QMessageBox::critical(
+          this, tr("Error"),
+          tr("You selected the Rclone Browser executable!\nPlease select the "
+             "rclone executable instead."));
       return;
     }
 
@@ -29,7 +30,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
 
   QObject::connect(ui.rcloneConfBrowse, &QPushButton::clicked, this, [=]() {
     QString rcloneConf = QFileDialog::getOpenFileName(
-        this, "Select .rclone.conf location", ui.rcloneConf->text());
+        this, tr("Select .rclone.conf location"), ui.rcloneConf->text());
     if (rcloneConf.isEmpty()) {
       return;
     }
@@ -40,7 +41,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
   QObject::connect(
       ui.defaultDownloadDirBrowse, &QPushButton::clicked, this, [=]() {
         QString defaultDownloadDir = QFileDialog::getExistingDirectory(
-            this, "Select default download directory",
+            this, tr("Select default download directory"),
             ui.defaultDownloadDir->text());
 
         if (defaultDownloadDir.isEmpty()) {
@@ -53,7 +54,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
   QObject::connect(
       ui.defaultUploadDirBrowse, &QPushButton::clicked, this, [=]() {
         QString defaultUploadDir = QFileDialog::getExistingDirectory(
-            this, "Select default upload directory",
+            this, tr("Select default upload directory"),
             ui.defaultUploadDir->text());
 
         if (defaultUploadDir.isEmpty()) {
@@ -136,6 +137,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
   }
 #endif
 
+  const QString language = settings->value("Settings/language", "en").toString();
+  ui.language->setCurrentIndex(language == "zh_CN" ? 1 : 0);
+
   if ((settings->value("Settings/iconSize").toString()) == "small") {
     ui.cb_small->setChecked(true);
   } else {
@@ -147,9 +151,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
   }
 
   ui.info_2->setText(
-      "See rclone <a "
-      "href=\"https://github.com/rclone/rclone/blob/master/docs/content/"
-      "faq.md#can-i-use-rclone-with-an-http-proxy\">FAQ</a> for details.");
+      tr("See rclone <a "
+         "href=\"https://github.com/rclone/rclone/blob/master/docs/content/"
+         "faq.md#can-i-use-rclone-with-an-http-proxy\">FAQ</a> for details."));
   ui.info_2->setTextFormat(Qt::RichText);
   ui.info_2->setTextInteractionFlags(Qt::TextBrowserInteraction);
   ui.info_2->setOpenExternalLinks(true);
@@ -246,6 +250,10 @@ QString PreferencesDialog::getIconSize() const {
       return "medium";
     }
   }
+}
+
+QString PreferencesDialog::getLanguage() const {
+  return ui.language->currentIndex() == 1 ? "zh_CN" : "en";
 }
 
 QString PreferencesDialog::getHttpProxy() const {

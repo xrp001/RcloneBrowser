@@ -94,7 +94,13 @@ endif()
 
 set(QRC resources.qrc)
 
+set(TRANSLATIONS
+  ${CMAKE_CURRENT_SOURCE_DIR}/../translations/rclonebrowser_zh_CN.ts
+)
+
 add_definitions(-DRCLONE_BROWSER_VERSION="${RCLONE_BROWSER_VERSION}")
+
+qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TRANSLATIONS})
 
 qt5_wrap_ui(UI_OUT ${UI})
 qt5_wrap_cpp(MOC_OUT ${MOC})
@@ -144,4 +150,24 @@ else()
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/rclone-browser-256x256.png" DESTINATION "share/icons/hicolor/256x256/apps" RENAME "rclone-browser.png")
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/rclone-browser-512x512.png" DESTINATION "share/icons/hicolor/512x512/apps" RENAME "rclone-browser.png")
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/rclone-browser.desktop" DESTINATION "share/applications")
+  install(FILES ${QM_FILES} DESTINATION "share/rclone-browser/translations")
+endif()
+
+add_custom_target(translations ALL DEPENDS ${QM_FILES})
+
+if(WIN32)
+  add_dependencies(RcloneBrowser translations)
+  add_custom_command(TARGET RcloneBrowser POST_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:RcloneBrowser>/translations"
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QM_FILES} "$<TARGET_FILE_DIR:RcloneBrowser>/translations")
+elseif(APPLE)
+  add_dependencies(rclone-browser translations)
+  add_custom_command(TARGET rclone-browser POST_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_CONTENT_DIR:rclone-browser>/Resources/translations"
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QM_FILES} "$<TARGET_BUNDLE_CONTENT_DIR:rclone-browser>/Resources/translations")
+else()
+  add_dependencies(rclone-browser translations)
+  add_custom_command(TARGET rclone-browser POST_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:rclone-browser>/translations"
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QM_FILES} "$<TARGET_FILE_DIR:rclone-browser>/translations")
 endif()

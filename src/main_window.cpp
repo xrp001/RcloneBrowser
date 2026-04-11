@@ -180,6 +180,11 @@ MainWindow::MainWindow() {
       settings->setValue("Settings/darkMode", dialog.getDarkMode());
       settings->setValue("Settings/iconSize", dialog.getIconSize().trimmed());
 
+      const QString previousLanguage =
+          settings->value("Settings/language", "en").toString();
+      const QString currentLanguage = dialog.getLanguage();
+      settings->setValue("Settings/language", currentLanguage);
+
       settings->setValue("Settings/useProxy", dialog.getUseProxy());
       settings->setValue("Settings/http_proxy",
                          dialog.getHttpProxy().trimmed());
@@ -197,6 +202,13 @@ MainWindow::MainWindow() {
       mNotifyFinishedTransfers = dialog.getNotifyFinishedTransfers();
 
       mSystemTray.setVisible(mAlwaysShowInTray);
+
+      if (previousLanguage != currentLanguage) {
+        QMessageBox::information(
+            this, tr("Language Changed"),
+            tr("The application language will be updated after restarting "
+               "Rclone Browser."));
+      }
     }
   });
 

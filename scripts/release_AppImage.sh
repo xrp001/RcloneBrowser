@@ -54,6 +54,7 @@ fi
 require_command git
 require_command gcc
 require_command make
+require_command lrelease
 require_command linuxdeploy
 require_command linuxdeploy-plugin-qt
 require_command linuxdeploy-plugin-appimage
@@ -120,6 +121,10 @@ mkdir -p "$ROOT"/release
 if [ -f "$RELEASE_TARGET" ]; then
   rm "$RELEASE_TARGET"
 fi
+
+# compile translations explicitly before build/package
+lrelease "$ROOT"/translations/rclonebrowser_zh_CN.ts \
+  -qm "$ROOT"/translations/rclonebrowser_zh_CN.qm
 
 # build and install to temporary AppDir folder
 cd "$BUILD"
