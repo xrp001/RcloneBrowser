@@ -55,6 +55,8 @@ public:
   QString excluded;
   QString extra;
   QString uploadHeaders;
+  QString uploadTags;
+  bool uploadTagLocaltime;
   QString source;
   QString dest;
   bool isFolder;

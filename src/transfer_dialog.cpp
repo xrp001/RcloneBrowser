@@ -67,6 +67,9 @@ TransferDialog::TransferDialog(bool isDownload, bool isDrop,
         ui.spinLowLevelRetries->setValue(10);
         ui.checkDeleteExcluded->setChecked(false);
         ui.textExclude->clear();
+        ui.textUploadHeaders->clear();
+        ui.textUploadTags->clear();
+        ui.checkUploadTagLocaltime->setChecked(false);
         auto settings = GetSettings();
         if (isDownload) {
           // download
@@ -109,11 +112,11 @@ TransferDialog::TransferDialog(bool isDownload, bool isDrop,
                    &QDialog::reject);
 
   QObject::connect(ui.rbCopy, &QRadioButton::toggled, this,
-                   &TransferDialog::updateUploadMetadataVisibility);
+                   &TransferDialog::updateUploadOptionsVisibility);
   QObject::connect(ui.rbMove, &QRadioButton::toggled, this,
-                   &TransferDialog::updateUploadMetadataVisibility);
+                   &TransferDialog::updateUploadOptionsVisibility);
   QObject::connect(ui.rbSync, &QRadioButton::toggled, this,
-                   &TransferDialog::updateUploadMetadataVisibility);
+                   &TransferDialog::updateUploadOptionsVisibility);
 
   QObject::connect(ui.buttonSourceFile, &QToolButton::clicked, this, [=]() {
     QString file = QFileDialog::getOpenFileName(this, "Choose file to upload");
@@ -295,7 +298,7 @@ TransferDialog::TransferDialog(bool isDownload, bool isDrop,
     };
   }
 
-  updateUploadMetadataVisibility();
+  updateUploadOptionsVisibility();
 }
 
 TransferDialog::~TransferDialog() {
@@ -420,6 +423,8 @@ JobOptions *TransferDialog::getJobOptions() {
   mJobOptions->excluded = ui.textExclude->toPlainText().trimmed();
   mJobOptions->extra = ui.textExtra->text().trimmed();
   mJobOptions->uploadHeaders = ui.textUploadHeaders->toPlainText().trimmed();
+  mJobOptions->uploadTags = ui.textUploadTags->toPlainText().trimmed();
+  mJobOptions->uploadTagLocaltime = ui.checkUploadTagLocaltime->isChecked();
 
   mJobOptions->source = ui.textSource->text();
   mJobOptions->dest = ui.textDest->text();
@@ -496,6 +501,8 @@ void TransferDialog::putJobOptions() {
   ui.textExclude->setPlainText(mJobOptions->excluded);
   ui.textExtra->setText(mJobOptions->extra);
   ui.textUploadHeaders->setPlainText(mJobOptions->uploadHeaders);
+  ui.textUploadTags->setPlainText(mJobOptions->uploadTags);
+  ui.checkUploadTagLocaltime->setChecked(mJobOptions->uploadTagLocaltime);
 
   ui.textSource->setText(mJobOptions->source);
   ui.textDest->setText(mJobOptions->dest);
@@ -503,13 +510,16 @@ void TransferDialog::putJobOptions() {
   // DDBB
   ui.checkisDriveSharedWithMe->setChecked(mJobOptions->DriveSharedWithMe);
 
-  updateUploadMetadataVisibility();
+  updateUploadOptionsVisibility();
 }
 
-void TransferDialog::updateUploadMetadataVisibility() {
+void TransferDialog::updateUploadOptionsVisibility() {
   bool visible = !mIsDownload && !ui.rbSync->isChecked();
   ui.labelUploadHeaders->setVisible(visible);
   ui.textUploadHeaders->setVisible(visible);
+  ui.labelUploadTags->setVisible(visible);
+  ui.textUploadTags->setVisible(visible);
+  ui.checkUploadTagLocaltime->setVisible(visible);
 }
 
 void TransferDialog::done(int r) {

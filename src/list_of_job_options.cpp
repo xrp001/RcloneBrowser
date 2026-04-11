@@ -152,8 +152,9 @@ QDataStream &operator<<(QDataStream &stream, JobOptions &jo) {
          << jo.minSize << jo.minAge << jo.maxAge << jo.maxDepth
          << jo.connectTimeout << jo.idleTimeout << jo.retries
          << jo.lowLevelRetries << jo.deleteExcluded << jo.excluded << jo.extra
-         << jo.uploadHeaders << jo.DriveSharedWithMe << jo.source << jo.dest
-         << jo.isFolder << jo.uniqueId;
+         << jo.uploadHeaders << jo.uploadTags << jo.uploadTagLocaltime
+         << jo.DriveSharedWithMe << jo.source << jo.dest << jo.isFolder
+         << jo.uniqueId;
 
   return stream;
 }
@@ -180,6 +181,10 @@ QDataStream &operator>>(QDataStream &stream, JobOptions &jo) {
 
   if (actualVersion >= 4) {
     stream >> jo.uploadHeaders;
+  }
+
+  if (actualVersion >= 5) {
+    stream >> jo.uploadTags >> jo.uploadTagLocaltime;
   }
 
   stream >> jo.DriveSharedWithMe >> jo.source >> jo.dest;

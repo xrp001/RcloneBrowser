@@ -210,6 +210,38 @@ x-amz-meta-snowball-auto-extract:true</string>
            </widget>
           </item>
           <item>
+           <widget class="QLabel" name="labelUploadTags">
+            <property name="toolTip">
+             <string>One tag per line. Each line will be passed as --s3-tags &lt;value&gt;.</string>
+            </property>
+            <property name="text">
+             <string>Upload object tags:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPlainTextEdit" name="textUploadTags">
+            <property name="toolTip">
+             <string>One tag per line, for example:
+project:demo
+env:test</string>
+            </property>
+            <property name="tabChangesFocus">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkUploadTagLocaltime">
+            <property name="toolTip">
+             <string>Add localtime=${modtime} as an S3 object tag during upload.</string>
+            </property>
+            <property name="text">
+             <string>Add localtime tag from source modtime</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_15">
             <property name="text">
              <string>Task description</string>

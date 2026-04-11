@@ -15,9 +15,9 @@ JobOptions::JobOptions()
       syncTiming(UnknownTiming), skipNewer(false), skipExisting(false),
       compare(false), compareOption(), verbose(false), sameFilesystem(false),
       dontUpdateModified(false), maxDepth(0), deleteExcluded(false),
-      isFolder(false) {}
+      uploadTagLocaltime(false), isFolder(false) {}
 
-const qint32 JobOptions::classVersion = 4;
+const qint32 JobOptions::classVersion = 5;
 
 JobOptions::~JobOptions() {}
 
@@ -146,6 +146,38 @@ QStringList JobOptions::getOptions() const {
         list << "--header-upload" << header;
       }
     }
+  }
+
+  QStringList uploadTagValues;
+  if (!uploadTags.isEmpty()) {
+    for (auto line : uploadTags.split('\n')) {
+      QString tag = line.trimmed();
+      if (tag.isEmpty()) {
+        continue;
+      }
+
+      if (!tag.contains('=') && tag.contains(':')) {
+        int separator = tag.indexOf(':');
+        tag = tag.left(separator).trimmed() + "=" +
+              tag.mid(separator + 1).trimmed();
+      }
+
+      uploadTagValues << tag;
+    }
+  }
+
+  if (uploadTagLocaltime) {
+    QFileInfo sourceInfo(source);
+    if (sourceInfo.exists()) {
+      uploadTagValues << "localtime=" +
+                             sourceInfo.lastModified().toUTC().toString(
+                                 Qt::ISODate);
+    }
+  }
+
+  if (!uploadTagValues.isEmpty()) {
+    list << "--header-upload"
+         << ("x-amz-tagging: " + uploadTagValues.join("&"));
   }
 
   if (DriveSharedWithMe) {
