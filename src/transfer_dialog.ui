@@ -198,17 +198,29 @@
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QPlainTextEdit" name="textUploadHeaders">
-            <property name="toolTip">
-             <string>One header per line, for example:
+           <item>
+            <widget class="QPlainTextEdit" name="textUploadHeaders">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>56</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>72</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>One header per line, for example:
 x-amz-meta-snowball-auto-extract:true</string>
-            </property>
-            <property name="tabChangesFocus">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
+             </property>
+             <property name="tabChangesFocus">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
           <item>
            <widget class="QLabel" name="labelUploadTags">
             <property name="toolTip">
@@ -219,18 +231,30 @@ x-amz-meta-snowball-auto-extract:true</string>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QPlainTextEdit" name="textUploadTags">
-            <property name="toolTip">
-             <string>One tag per line, for example:
+           <item>
+            <widget class="QPlainTextEdit" name="textUploadTags">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>56</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>72</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>One tag per line, for example:
 project:demo
 env:test</string>
-            </property>
-            <property name="tabChangesFocus">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
+             </property>
+             <property name="tabChangesFocus">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
           <item>
            <widget class="QCheckBox" name="checkUploadTagLocaltime">
             <property name="toolTip">
