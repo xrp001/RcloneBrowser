@@ -40,16 +40,40 @@ QString UrlEncodePathSegment(const QString &value) {
 QString BuildCanonicalUri(const QString &bucket, const QString &key) {
   QStringList parts;
   parts << bucket;
+  
+  // IMPORTANT: Handle literal '%' characters properly
+  // S3 object keys can contain '%' as literal character (not part of URL encoding)
+  // Only skip encoding if we find VALID %XX hex encoding patterns
+  // If '%' is NOT followed by two hex digits, it is a literal and MUST be encoded to %25
   for (const auto &part : key.split('/', Qt::SkipEmptyParts)) {
-    parts << part;
+    bool hasOnlyValidEncoding = true;
+    int i = 0;
+    while (i < part.length()) {
+      if (part[i] == '%') {
+        // Check if this is a valid %XX encoding pattern
+        if (i + 2 >= part.length() 
+            || !part[i+1].isLetterOrNumber() 
+            || !part[i+2].isLetterOrNumber()) {
+          // Invalid encoding pattern, this is literal % character
+          hasOnlyValidEncoding = false;
+          break;
+        }
+        i += 3;
+      } else {
+        i += 1;
+      }
+    }
+    
+    if (hasOnlyValidEncoding && part.contains('%')) {
+      // All % characters are part of valid URL encoding, use as-is
+      parts << part;
+    } else {
+      // Contains literal % or no encoding at all, encode entire segment properly
+      parts << UrlEncodePathSegment(part);
+    }
   }
 
-  QStringList encodedParts;
-  for (const auto &part : parts) {
-    encodedParts << UrlEncodePathSegment(part);
-  }
-
-  return "/" + encodedParts.join('/');
+  return "/" + parts.join('/');
 }
 
 QByteArray HmacSha256(const QByteArray &key, const QByteArray &data) {
@@ -216,8 +240,10 @@ S3RequestResult SendS3TaggingRequest(const QString &method,
 
   QString canonicalUri = BuildCanonicalUri(bucket, key);
   QUrl url = endpoint;
-  url.setPath(canonicalUri);
-  url.setQuery("tagging");
+  // CRITICAL: Use StrictMode to prevent QUrl from automatically decoding % characters!
+  // QUrl by default decodes path components which destroys object keys that contain literal %
+  url.setPath(canonicalUri, QUrl::StrictMode);
+  url.setQuery("tagging", QUrl::StrictMode);
 
   QByteArray payload;
   if (method == "PUT") {
