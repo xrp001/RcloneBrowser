@@ -20,7 +20,11 @@ signals:
   void addMount(const QString &remote, const QString &folder);
   void addStream(const QString &remote, const QString &stream);
 
+protected:
+  void resizeEvent(QResizeEvent *event) override;
+
 private:
   Ui::RemoteWidget ui;
   QString mRemoteType;
+  void arrangeButtons();
 };

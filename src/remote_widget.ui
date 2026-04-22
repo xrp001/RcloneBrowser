@@ -38,19 +38,25 @@
        </property>
        <item>
         <widget class="QWidget" name="buttons" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
+          <layout class="QGridLayout" name="horizontalLayout_2">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="horizontalSpacing">
+            <number>4</number>
+           </property>
+           <property name="verticalSpacing">
+            <number>4</number>
+           </property>
           <item>
            <widget class="QToolButton" name="buttonRefresh">
             <property name="text">

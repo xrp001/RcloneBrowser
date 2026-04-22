@@ -224,11 +224,11 @@ MainWindow::MainWindow() {
             R"(<h3>GUI for rclone, v)" RCLONE_BROWSER_VERSION "</h3>"
             R"(<p>Copyright &copy; 2026</p>)"
 
-            R"(<p>Current development and maintenance<br /><a href="https://github.com/kapitainsky/RcloneBrowser">kapitainsky</a></p>)"
-
             R"(<p>Current maintainer<br /><a href="https://github.com/xrp001/RcloneBrowser">xrp001</a></p>)"
 
-            R"(<p>Project page<br /><a href="https://github.com/xrp001/RcloneBrowser">https://github.com/xrp001/RcloneBrowser</a></p>)"
+            R"(<p>Current project page<br /><a href="https://github.com/xrp001/RcloneBrowser">https://github.com/xrp001/RcloneBrowser</a></p>)"
+
+            R"(<p>Previous development and maintenance<br /><a href="https://github.com/kapitainsky/RcloneBrowser">kapitainsky</a></p>)"
 
             R"(<p>Original version<br /><a href="https://mmozeiko.github.io/RcloneBrowser">Martins Mozeiko</a></p>)"));
   });

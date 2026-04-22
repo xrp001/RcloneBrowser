@@ -66,8 +66,7 @@ QString root = isLocal ? "/" : QString();
   buttonTags->setObjectName("buttonTags");
   buttonTags->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   buttonTags->setDefaultAction(ui.tags);
-  ui.horizontalLayout_2->insertWidget(ui.horizontalLayout_2->indexOf(ui.buttonExport),
-                                      buttonTags);
+  // Tags button will be placed correctly in arrangeButtons() method
   ui.buttonSize->setDefaultAction(ui.getSize);
   ui.buttonExport->setDefaultAction(ui.export_);
 
@@ -841,6 +840,69 @@ QString root = isLocal ? "/" : QString();
     auto tabs = qobject_cast<QTabWidget *>(parent);
     tabs->removeTab(tabs->indexOf(this));
   });
+
+  // Initial layout arrangement after widget is shown
+  QTimer::singleShot(0, this, [=]() {
+    arrangeButtons();
+  });
 }
 
-RemoteWidget::~RemoteWidget() {}
+RemoteWidget::~RemoteWidget() {
+}
+
+void RemoteWidget::resizeEvent(QResizeEvent *event) {
+  QWidget::resizeEvent(event);
+  arrangeButtons();
+}
+
+void RemoteWidget::arrangeButtons() {
+  // Always collect buttons first (they might be in different rows)
+  QList<QWidget*> buttons;
+  buttons << ui.buttonRefresh << ui.buttonMkdir << ui.buttonRename << ui.buttonMove
+          << ui.buttonPurge << ui.buttonMount << ui.buttonStream << ui.buttonUpload
+          << ui.buttonDownload << ui.buttonSize << ui.buttonTree << ui.buttonLink
+          << ui.buttonHead << ui.buttonExport;
+
+  // Find tags button
+  for (QWidget *child : ui.buttons->findChildren<QWidget*>()) {
+    if (child->objectName() == "buttonTags") {
+      buttons.insert(buttons.indexOf(ui.buttonExport), child);
+      break;
+    }
+  }
+
+  QGridLayout *layout = ui.horizontalLayout_2;
+
+  // Clear layout completely
+  while (layout->count() > 0) {
+    layout->takeAt(0);
+    // Do NOT delete items, just remove from layout
+  }
+
+  int row = 0;
+  int column = 0;
+  int availableWidth = ui.buttons->width() - 80; // increase safety margin for scrollbars/frames
+  int currentRowWidth = 0;
+  const int spacing = 8; // fixed spacing instead of layout->horizontalSpacing()
+
+  // Recalculate layout
+  for (QWidget *button : buttons) {
+    int buttonWidth = button->sizeHint().width() + spacing;
+
+    // Allow wrap even at first column
+    if (currentRowWidth + buttonWidth > availableWidth) {
+      row++;
+      column = 0;
+      currentRowWidth = 0;
+    }
+
+    layout->addWidget(button, row, column);
+    column++;
+    currentRowWidth += buttonWidth;
+  }
+
+  // Add right-aligned items
+  layout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum), row, column++);
+  layout->addWidget(ui.checkBoxShared, row, column++);
+  layout->addItem(new QSpacerItem(10, 20, QSizePolicy::Minimum, QSizePolicy::Minimum), row, column++);
+}
