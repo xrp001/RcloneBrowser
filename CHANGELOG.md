@@ -1,4 +1,14 @@
 # Change Log
+## [1.8.5][1.8.5] - 2026-04-27
+-   NEW: Added full Chinese language interface support (zh_CN translation)
+-   NEW: Added upload HTTP header metadata support
+-   NEW: Responsive wrapping toolbar buttons with improved layout handling
+-   NEW: S3 object tags management - view, edit and upload tags for S3 objects
+-   NEW: Improved transfer dialog UI with adjusted input field sizes for headers and tags
+-   FIXED: Correct handling of literal % character in S3 object keys for tagging operations
+-   FIXED: AppImage build script improvements
+-   Various UI/UX improvements and small bug fixes
+
 ## [1.8.3][1.8.3] - 2026-04-11
 -   NEW: support upload object tags with multiple entries and optional localtime tag
 -   NEW: support direct S3 object tags viewing and management from the remote browser
@@ -132,6 +142,7 @@
 -   Mount and unmount folders on macOS and GNU/Linux
 -   Optionally minimizes to tray, with notifications when upload/download finishes
 
+[1.8.5]: https://github.com/xrp001/RcloneBrowser/releases/tag/1.8.5
 [1.8.3]: https://github.com/xrp001/RcloneBrowser/releases/tag/1.8.3
 [1.8.0]: https://github.com/kapitainsky/RcloneBrowser/releases/tag/1.8.0
 [1.7.0]: https://github.com/kapitainsky/RcloneBrowser/releases/tag/1.7.0
