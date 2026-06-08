@@ -91,7 +91,7 @@ if !VS_FOUND! == 1 (
 
 :: Qt 5.13.2
 if "%ARCH%" == "x86" (
-  set QT=C:\Qt\5.13.2\msvc2017\
+  set QT=C:\Qt\5.13.2\msvc2017
   if exist "!QT!bin\qmake.exe" (
     echo   [OK] Qt 5.13.2 msvc2017 ^(32-bit^)
   ) else (
@@ -101,7 +101,7 @@ if "%ARCH%" == "x86" (
     set /a MISSING+=1
   )
 ) else (
-  set QT=C:\Qt\5.13.2\msvc2017_64\
+  set QT=C:\Qt\5.13.2\msvc2017_64
   if exist "!QT!bin\qmake.exe" (
     echo   [OK] Qt 5.13.2 msvc2017_64 ^(64-bit^)
   ) else (
