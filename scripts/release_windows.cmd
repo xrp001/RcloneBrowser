@@ -92,7 +92,7 @@ if !VS_FOUND! == 1 (
 :: Qt 5.13.2
 if "%ARCH%" == "x86" (
   set QT=C:\Qt\5.13.2\msvc2017
-  if exist "!QT!bin\qmake.exe" (
+  if exist "!QT!\bin\qmake.exe" (
     echo   [OK] Qt 5.13.2 msvc2017 ^(32-bit^)
   ) else (
     echo   [MISSING] Qt 5.13.2 msvc2017 ^(32-bit^)
@@ -102,7 +102,7 @@ if "%ARCH%" == "x86" (
   )
 ) else (
   set QT=C:\Qt\5.13.2\msvc2017_64
-  if exist "!QT!bin\qmake.exe" (
+  if exist "!QT!\bin\qmake.exe" (
     echo   [OK] Qt 5.13.2 msvc2017_64 ^(64-bit^)
   ) else (
     echo   [MISSING] Qt 5.13.2 msvc2017_64 ^(64-bit^)
@@ -170,8 +170,10 @@ if !MISSING! gtr 0 (
   echo ==^> WARNING: !MISSING! dependencies are missing!
   echo See install instructions above for each missing dependency.
   echo.
+  if defined GITHUB_ACTIONS goto :fail
+  if defined CI goto :fail
   choice /c YN /m "Continue anyway?"
-  if errorlevel 2 goto :eof
+  if errorlevel 2 goto :fail
 ) else (
   echo ==^> All dependencies found.
 )
