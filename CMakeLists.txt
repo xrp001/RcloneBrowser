@@ -1,6 +1,6 @@
-project(rclone-browser)
+cmake_minimum_required(VERSION 3.5)
 
-cmake_minimum_required(VERSION 2.8)
+project(rclone-browser)
 
 if(WIN32)
   # link automatically to qtmain.lib on Windows
