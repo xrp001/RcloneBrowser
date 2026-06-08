@@ -37,36 +37,122 @@ if [ "${1:-}" = "SIGN" ]; then
   export SIGN="1"
 fi
 
-require_command() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    echo "required command not found: $1" >&2
-    exit 1
+# --- Dependency Checking ---
+
+MISSING_DEPS=()
+
+check_system_dep() {
+  local cmd="$1"
+  local pkg_apt="$2"
+  local pkg_yum="$3"
+
+  if command -v "$cmd" >/dev/null 2>&1; then
+    echo "  [OK] $cmd"
+    return 0
+  fi
+
+  echo "  [MISSING] $cmd"
+  read -r -p "  Install '$pkg_apt'? [Y/n] " answer || answer="n"
+  if [[ "$answer" =~ ^[Nn] ]]; then
+    MISSING_DEPS+=("$cmd (try: apt install $pkg_apt)")
+    return 0
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo apt-get install -y "$pkg_apt" || true
+  elif command -v yum >/dev/null 2>&1; then
+    sudo yum install -y "$pkg_yum" || true
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y "$pkg_yum" || true
+  else
+    echo "  Cannot detect package manager. Install manually."
+    MISSING_DEPS+=("$cmd (manual install required)")
+    return 0
+  fi
+
+  if command -v "$cmd" >/dev/null 2>&1; then
+    echo "  [OK] $cmd installed successfully"
+  else
+    echo "  [WARN] Installation may have failed for $cmd"
+    MISSING_DEPS+=("$cmd (installation failed)")
   fi
 }
 
+check_manual_dep() {
+  local cmd="$1"
+  local desc="$2"
+
+  if command -v "$cmd" >/dev/null 2>&1; then
+    echo "  [OK] $cmd"
+    return 0
+  fi
+
+  echo "  [MISSING] $cmd"
+  echo "         $desc"
+  MISSING_DEPS+=("$cmd ($desc)")
+}
+
+echo "==> Checking build dependencies..."
+
+check_system_dep cmake cmake cmake
+check_system_dep git git git
+check_system_dep gcc gcc gcc
+check_system_dep g++ g++ gcc-c++
+check_system_dep make make make
+check_system_dep lrelease qttools5-dev-tools qt5-qttools
+
+# qmake may be named qmake-qt5 on some distros
+if command -v qmake >/dev/null 2>&1; then
+  echo "  [OK] qmake"
+elif command -v qmake-qt5 >/dev/null 2>&1; then
+  echo "  [OK] qmake-qt5"
+else
+  echo "  [MISSING] qmake / qmake-qt5"
+  check_system_dep qmake qt5-qmake qt5-qtbase-devel
+fi
+
+check_manual_dep linuxdeploy \
+  "Download from https://github.com/linuxdeploy/linuxdeploy/releases"
+check_manual_dep linuxdeploy-plugin-qt \
+  "Download from https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases"
+check_manual_dep linuxdeploy-plugin-appimage \
+  "Download from https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases"
+
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+  echo ""
+  echo "==> WARNING: Some dependencies are missing:"
+  for dep in "${MISSING_DEPS[@]}"; do
+    echo "    - $dep"
+  done
+  echo ""
+  read -r -p "Continue anyway? [y/N] " answer || answer="n"
+  if [[ ! "$answer" =~ ^[Yy] ]]; then
+    echo "Aborting."
+    exit 1
+  fi
+fi
+
+echo "==> Dependency check complete."
+echo ""
+
+# cmake path
 if [ -x /opt/cmake/bin/cmake ]; then
   CMAKE="/opt/cmake/bin/cmake"
 else
-  require_command cmake
   CMAKE="$(command -v cmake)"
 fi
-
-require_command git
-require_command gcc
-require_command make
-require_command lrelease
-require_command linuxdeploy
-require_command linuxdeploy-plugin-qt
-require_command linuxdeploy-plugin-appimage
 
 # check gcc version on CentOS if using devtoolset style build environment
 if [ "$ARCH" = "x86_64" ]; then
   currentver="$(gcc -dumpversion)"
   if [ "${currentver:0:1}" -lt "7" ] && [ -f /etc/centos-release ]; then
-    echo "gcc version 7 or newer required"
-    echo "on CentOS 7 run"
-    echo "scl enable devtoolset-7 bash"
-    exit 1
+    echo "WARNING: gcc version 7 or newer required (current: $currentver)"
+    echo "On CentOS 7 run: scl enable devtoolset-7 bash"
+    read -r -p "Continue anyway? [y/N] " answer || answer="n"
+    if [[ ! "$answer" =~ ^[Yy] ]]; then
+      echo "Aborting."
+      exit 1
+    fi
   fi
 fi
 

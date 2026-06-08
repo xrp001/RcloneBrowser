@@ -91,7 +91,32 @@ make dmg
 ```
 
 ### Windows
-使用 MSVC 编译器 + Qt5 环境进行编译
+在命令提示符中运行 `scripts\release_windows.cmd`。发布脚本会在编译前检查依赖，若有缺失会询问是否继续。
+
+依赖：
+- Windows 10 version 1703（build 15063）或更新版本
+- Visual Studio 2019 或 2022，并安装 “Desktop development with C++” 工作负载
+- Qt 5.13.2，安装到 `C:\Qt\5.13.2\`
+- CMake、Git、7-Zip、Inno Setup 6
+- 32 位构建需要 OpenSSL 1.1.1d win32
+
+可使用 `aqtinstall` 安装 Qt 5.13.2：
+
+```cmd
+pip install aqtinstall
+aqt install-qt windows desktop 5.13.2 win64_msvc2017_64 -O C:\Qt
+aqt install-qt windows desktop 5.13.2 win32_msvc2017 -O C:\Qt
+```
+
+编译：
+
+```cmd
+cd scripts
+release_windows.cmd x64
+release_windows.cmd x86
+```
+
+产物会生成到 `release\`。
 
 ## 📜 版本历史
 

@@ -115,7 +115,32 @@ make -j$(sysctl -n hw.ncpu)
 ```
 
 ### Windows
-Build with MSVC compiler + Qt5 environment.
+Use `scripts\release_windows.cmd` from Command Prompt. The release script checks dependencies before building and asks whether to continue if anything is missing.
+
+Requirements:
+- Windows 10 version 1703 (build 15063) or newer
+- Visual Studio 2019 or 2022 with the "Desktop development with C++" workload
+- Qt 5.13.2 installed under `C:\Qt\5.13.2\`
+- CMake, Git, 7-Zip, Inno Setup 6
+- OpenSSL 1.1.1d win32 for 32-bit builds
+
+Qt 5.13.2 can be installed with `aqtinstall`:
+
+```cmd
+pip install aqtinstall
+aqt install-qt windows desktop 5.13.2 win64_msvc2017_64 -O C:\Qt
+aqt install-qt windows desktop 5.13.2 win32_msvc2017 -O C:\Qt
+```
+
+Build:
+
+```cmd
+cd scripts
+release_windows.cmd x64
+release_windows.cmd x86
+```
+
+Outputs are written to `release\`.
 
 ## Changelog
 
