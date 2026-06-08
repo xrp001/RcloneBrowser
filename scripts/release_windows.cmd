@@ -227,13 +227,13 @@ mkdir build
 cd build
 
 if "%ARCH%" == "x86" (
-cmake -G "%CMAKEGEN%" -A Win32 -DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_PREFIX_PATH="%QT%" ..
+cmake -S "%ROOT%" -B "%ROOT%\build" -G "%CMAKEGEN%" -A Win32 -DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_PREFIX_PATH="%QT%"
 ) else (
-cmake -G "%CMAKEGEN%" -A x64 -DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_PREFIX_PATH="%QT%" ..
+cmake -S "%ROOT%" -B "%ROOT%\build" -G "%CMAKEGEN%" -A x64 -DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_PREFIX_PATH="%QT%"
 )
 if errorlevel 1 goto :fail_popd
 
-cmake --build . --config Release
+cmake --build "%ROOT%\build" --config Release
 if errorlevel 1 goto :fail_popd
 popd
 

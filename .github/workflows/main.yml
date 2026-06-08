@@ -1,4 +1,4 @@
-name: Build Windows Packages
+name: Build Packages
 
 on:
   workflow_dispatch:
@@ -55,4 +55,49 @@ jobs:
           path: |
             release\*.zip
             release\*.exe
+          if-no-files-found: error
+
+  build-linux:
+    name: Linux AppImage x86_64
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            git \
+            libfuse2 \
+            qtbase5-dev \
+            qttools5-dev \
+            qttools5-dev-tools
+
+      - name: Install linuxdeploy tools
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -L -o "$HOME/bin/linuxdeploy" \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -L -o "$HOME/bin/linuxdeploy-plugin-qt" \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          curl -L -o "$HOME/bin/linuxdeploy-plugin-appimage" \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
+          chmod +x "$HOME/bin/linuxdeploy" \
+            "$HOME/bin/linuxdeploy-plugin-qt" \
+            "$HOME/bin/linuxdeploy-plugin-appimage"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Build Linux AppImage
+        run: |
+          scripts/release_AppImage.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rclone-browser-linux-x86_64
+          path: release/*.AppImage
           if-no-files-found: error

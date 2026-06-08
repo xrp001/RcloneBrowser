@@ -40,11 +40,40 @@ fi
 # --- Dependency Checking ---
 
 MISSING_DEPS=()
+APT_UPDATED=0
+LRELEASE=lrelease
+
+install_packages() {
+  local apt_pkgs="$1"
+  local rpm_pkgs="$2"
+  local zypper_pkgs="$3"
+  local pacman_pkgs="$4"
+
+  if command -v apt-get >/dev/null 2>&1; then
+    if [ "$APT_UPDATED" -eq 0 ]; then
+      sudo apt-get update || true
+      APT_UPDATED=1
+    fi
+    sudo apt-get install -y $apt_pkgs || true
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y $rpm_pkgs || true
+  elif command -v yum >/dev/null 2>&1; then
+    sudo yum install -y $rpm_pkgs || true
+  elif command -v zypper >/dev/null 2>&1; then
+    sudo zypper --non-interactive install $zypper_pkgs || true
+  elif command -v pacman >/dev/null 2>&1; then
+    sudo pacman -Sy --noconfirm --needed $pacman_pkgs || true
+  else
+    return 1
+  fi
+}
 
 check_system_dep() {
   local cmd="$1"
-  local pkg_apt="$2"
-  local pkg_yum="$3"
+  local apt_pkgs="$2"
+  local rpm_pkgs="$3"
+  local zypper_pkgs="$4"
+  local pacman_pkgs="$5"
 
   if command -v "$cmd" >/dev/null 2>&1; then
     echo "  [OK] $cmd"
@@ -52,20 +81,19 @@ check_system_dep() {
   fi
 
   echo "  [MISSING] $cmd"
-  read -r -p "  Install '$pkg_apt'? [Y/n] " answer || answer="n"
-  if [[ "$answer" =~ ^[Nn] ]]; then
-    MISSING_DEPS+=("$cmd (try: apt install $pkg_apt)")
+  if [ "${CI:-}" != "" ] || [ ! -t 0 ]; then
+    MISSING_DEPS+=("$cmd (install packages: $apt_pkgs / $rpm_pkgs / $zypper_pkgs / $pacman_pkgs)")
     return 0
   fi
 
-  if command -v apt-get >/dev/null 2>&1; then
-    sudo apt-get install -y "$pkg_apt" || true
-  elif command -v yum >/dev/null 2>&1; then
-    sudo yum install -y "$pkg_yum" || true
-  elif command -v dnf >/dev/null 2>&1; then
-    sudo dnf install -y "$pkg_yum" || true
-  else
-    echo "  Cannot detect package manager. Install manually."
+  read -r -p "  Install missing package(s) for '$cmd'? [Y/n] " answer || answer="n"
+  if [[ "$answer" =~ ^[Nn] ]]; then
+    MISSING_DEPS+=("$cmd (install packages: $apt_pkgs / $rpm_pkgs / $zypper_pkgs / $pacman_pkgs)")
+    return 0
+  fi
+
+  if ! install_packages "$apt_pkgs" "$rpm_pkgs" "$zypper_pkgs" "$pacman_pkgs"; then
+    echo "  Cannot detect supported package manager. Install manually."
     MISSING_DEPS+=("$cmd (manual install required)")
     return 0
   fi
@@ -92,24 +120,68 @@ check_manual_dep() {
   MISSING_DEPS+=("$cmd ($desc)")
 }
 
+check_command_group() {
+  local label="$1"
+  local result_var="$2"
+  local apt_pkgs="$3"
+  local rpm_pkgs="$4"
+  local zypper_pkgs="$5"
+  local pacman_pkgs="$6"
+  shift 6
+
+  for cmd in "$@"; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      printf -v "$result_var" '%s' "$cmd"
+      echo "  [OK] $cmd"
+      return 0
+    fi
+  done
+
+  echo "  [MISSING] $label"
+  if [ "${CI:-}" != "" ] || [ ! -t 0 ]; then
+    MISSING_DEPS+=("$label (install packages: $apt_pkgs / $rpm_pkgs / $zypper_pkgs / $pacman_pkgs)")
+    return 0
+  fi
+
+  read -r -p "  Install missing package(s) for '$label'? [Y/n] " answer || answer="n"
+  if [[ "$answer" =~ ^[Nn] ]]; then
+    MISSING_DEPS+=("$label (install packages: $apt_pkgs / $rpm_pkgs / $zypper_pkgs / $pacman_pkgs)")
+    return 0
+  fi
+
+  if ! install_packages "$apt_pkgs" "$rpm_pkgs" "$zypper_pkgs" "$pacman_pkgs"; then
+    echo "  Cannot detect supported package manager. Install manually."
+    MISSING_DEPS+=("$label (manual install required)")
+    return 0
+  fi
+
+  for cmd in "$@"; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      printf -v "$result_var" '%s' "$cmd"
+      echo "  [OK] $cmd installed successfully"
+      return 0
+    fi
+  done
+
+  echo "  [WARN] Installation may have failed for $label"
+  MISSING_DEPS+=("$label (installation failed)")
+}
+
 echo "==> Checking build dependencies..."
 
-check_system_dep cmake cmake cmake
-check_system_dep git git git
-check_system_dep gcc gcc gcc
-check_system_dep g++ g++ gcc-c++
-check_system_dep make make make
-check_system_dep lrelease qttools5-dev-tools qt5-qttools
+check_system_dep cmake cmake cmake cmake cmake
+check_system_dep git git git git git
+check_system_dep gcc gcc gcc gcc gcc
+check_system_dep g++ g++ gcc-c++ gcc-c++ gcc
+check_system_dep make make make make make
 
-# qmake may be named qmake-qt5 on some distros
-if command -v qmake >/dev/null 2>&1; then
-  echo "  [OK] qmake"
-elif command -v qmake-qt5 >/dev/null 2>&1; then
-  echo "  [OK] qmake-qt5"
-else
-  echo "  [MISSING] qmake / qmake-qt5"
-  check_system_dep qmake qt5-qmake qt5-qtbase-devel
-fi
+check_command_group "lrelease / lrelease-qt5" LRELEASE \
+  qttools5-dev-tools qt5-qttools libqt5-qttools-devel qt5-tools \
+  lrelease lrelease-qt5
+
+check_command_group "qmake / qmake-qt5" QMAKE \
+  qt5-qmake qt5-qtbase-devel libqt5-qtbase-devel qt5-base \
+  qmake qmake-qt5
 
 check_manual_dep linuxdeploy \
   "Download from https://github.com/linuxdeploy/linuxdeploy/releases"
@@ -125,6 +197,10 @@ if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
     echo "    - $dep"
   done
   echo ""
+  if [ "${CI:-}" != "" ] || [ ! -t 0 ]; then
+    echo "Aborting in non-interactive mode. Install the missing dependencies before running this script."
+    exit 1
+  fi
   read -r -p "Continue anyway? [y/N] " answer || answer="n"
   if [[ ! "$answer" =~ ^[Yy] ]]; then
     echo "Aborting."
@@ -209,7 +285,7 @@ if [ -f "$RELEASE_TARGET" ]; then
 fi
 
 # compile translations explicitly before build/package
-lrelease "$ROOT"/translations/rclonebrowser_zh_CN.ts \
+"$LRELEASE" "$ROOT"/translations/rclonebrowser_zh_CN.ts \
   -qm "$ROOT"/translations/rclonebrowser_zh_CN.qm
 
 # build and install to temporary AppDir folder
