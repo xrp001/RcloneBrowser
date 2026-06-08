@@ -1,0 +1,58 @@
+name: Build Windows Packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Windows ${{ matrix.arch }}
+    runs-on: windows-2022
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            qt_arch: win64_msvc2017_64
+            artifact_name: rclone-browser-windows-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Qt 5.13.2
+        shell: cmd
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install aqtinstall
+          aqt install-qt windows desktop 5.13.2 ${{ matrix.qt_arch }} -O C:\Qt
+
+      - name: Install packaging dependencies
+        shell: powershell
+        run: |
+          choco install cmake git 7zip innosetup -y --no-progress
+
+      - name: Build Windows package
+        shell: cmd
+        run: |
+          scripts\release_windows.cmd ${{ matrix.arch }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            release\*.zip
+            release\*.exe
+          if-no-files-found: error
