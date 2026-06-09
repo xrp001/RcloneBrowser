@@ -1,0 +1,123 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag, for example v1.9.0"
+        required: true
+        type: string
+      build_run_id:
+        description: "Successful Build Packages workflow run ID to publish"
+        required: true
+        type: string
+      target:
+        description: "Commit SHA or branch used if the tag does not exist"
+        required: true
+        default: "master"
+        type: string
+      release_name:
+        description: "Release title. Defaults to the tag name when empty"
+        required: false
+        type: string
+      draft:
+        description: "Create as draft release"
+        required: true
+        default: true
+        type: boolean
+      prerelease:
+        description: "Mark as pre-release"
+        required: true
+        default: false
+        type: boolean
+      release_notes:
+        description: "Optional release notes. Leave empty to auto-generate notes"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Download build artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist/windows dist/linux
+
+          gh run download "$BUILD_RUN_ID" \
+            --name rclone-browser-windows-x64 \
+            --dir dist/windows
+
+          gh run download "$BUILD_RUN_ID" \
+            --name rclone-browser-linux-x86_64 \
+            --dir dist/linux
+
+          find dist -type f \
+            \( -name '*.zip' -o -name '*.exe' -o -name '*.AppImage' \) \
+            -print | sort
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ inputs.tag_name }}
+          TARGET: ${{ inputs.target }}
+          RELEASE_NAME: ${{ inputs.release_name }}
+          DRAFT: ${{ inputs.draft }}
+          PRERELEASE: ${{ inputs.prerelease }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          set -euo pipefail
+
+          mapfile -d '' files < <(find dist -type f \
+            \( -name '*.zip' -o -name '*.exe' -o -name '*.AppImage' \) \
+            -print0 | sort -z)
+
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No release files found in downloaded artifacts."
+            exit 1
+          fi
+
+          if [ -z "$RELEASE_NAME" ]; then
+            RELEASE_NAME="$TAG_NAME"
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "${files[@]}" --clobber
+            exit 0
+          fi
+
+          release_args=(
+            "$TAG_NAME"
+            "${files[@]}"
+            --title "$RELEASE_NAME"
+            --target "$TARGET"
+          )
+
+          if [ "$DRAFT" = "true" ]; then
+            release_args+=(--draft)
+          fi
+
+          if [ "$PRERELEASE" = "true" ]; then
+            release_args+=(--prerelease)
+          fi
+
+          if [ -n "$RELEASE_NOTES" ]; then
+            printf '%s\n' "$RELEASE_NOTES" > release-notes.md
+            release_args+=(--notes-file release-notes.md)
+          else
+            release_args+=(--generate-notes)
+          fi
+
+          gh release create "${release_args[@]}"
