@@ -286,12 +286,17 @@ rem Inno Setup installer by https://github.com/jrsoftware/issrc
 rem in case user wants to install both 32bits and 64bits versions we need two AppId
 rem 64bits ;AppId={{0AF9BF43-8D44-4AFF-AE60-6CECF1BF0D31}
 rem 32bits ;AppId={{5644ED3A-6028-47C0-9796-29548EF7CEA3}
-if "%ARCH%" == "x86" (
-"c:\Program Files (x86)\Inno Setup 6"\iscc "/dMyAppVersion=%VERSION%" "/dMyAppId={{5644ED3A-6028-47C0-9796-29548EF7CEA3}" "/dMyAppDir=rclone-browser-%VERSION_COMMIT%-windows-32-bit" "/dMyAppArch=x86" /O"../release" /F"rclone-browser-%VERSION_COMMIT%-windows-32-bit" rclone-browser-win-installer.iss
-) else (
-"c:\Program Files (x86)\Inno Setup 6"\iscc "/dMyAppVersion=%VERSION%" "/dMyAppId={{0AF9BF43-8D44-4AFF-AE60-6CECF1BF0D31}" "/dMyAppDir=rclone-browser-%VERSION_COMMIT%-windows-64-bit" "/dMyAppArch=x64" /O"../release" /F"rclone-browser-%VERSION_COMMIT%-windows-64-bit" rclone-browser-win-installer.iss
-)
+pushd "%ROOT%\scripts"
 if errorlevel 1 goto :fail
+
+if "%ARCH%" == "x86" (
+"c:\Program Files (x86)\Inno Setup 6\iscc.exe" "/dMyAppVersion=%VERSION%" "/dMyAppId={{5644ED3A-6028-47C0-9796-29548EF7CEA3}" "/dMyAppDir=rclone-browser-%VERSION_COMMIT%-windows-32-bit" "/dMyAppArch=x86" /O"../release" /F"rclone-browser-%VERSION_COMMIT%-windows-32-bit" rclone-browser-win-installer.iss
+) else (
+"c:\Program Files (x86)\Inno Setup 6\iscc.exe" "/dMyAppVersion=%VERSION%" "/dMyAppId={{0AF9BF43-8D44-4AFF-AE60-6CECF1BF0D31}" "/dMyAppDir=rclone-browser-%VERSION_COMMIT%-windows-64-bit" "/dMyAppArch=x64" /O"../release" /F"rclone-browser-%VERSION_COMMIT%-windows-64-bit" rclone-browser-win-installer.iss
+)
+set ISCC_RESULT=%ERRORLEVEL%
+popd
+if not "%ISCC_RESULT%" == "0" goto :fail
 
 goto :eof
 
