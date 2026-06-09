@@ -45,7 +45,12 @@ QString BuildCanonicalUri(const QString &bucket, const QString &key) {
   // S3 object keys can contain '%' as literal character (not part of URL encoding)
   // Only skip encoding if we find VALID %XX hex encoding patterns
   // If '%' is NOT followed by two hex digits, it is a literal and MUST be encoded to %25
-  for (const auto &part : key.split('/', Qt::SkipEmptyParts)) {
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+  const QStringList pathParts = key.split('/', QString::SkipEmptyParts);
+#else
+  const QStringList pathParts = key.split('/', Qt::SkipEmptyParts);
+#endif
+  for (const auto &part : pathParts) {
     bool hasOnlyValidEncoding = true;
     int i = 0;
     while (i < part.length()) {

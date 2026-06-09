@@ -447,7 +447,11 @@ void MainWindow::rcloneGetVersion() {
           };
 #endif
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+          QStringList lines = version.split("\n", QString::SkipEmptyParts);
+#else
           QStringList lines = version.split("\n", Qt::SkipEmptyParts);
+#endif
           QString rclone_info2;
           QString rclone_info3;
 
