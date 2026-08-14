@@ -12,6 +12,272 @@
 #include "osx_helper.h"
 #endif
 
+namespace {
+void ApplyTheme(const QString &theme) {
+  qApp->setStyle(QStyleFactory::create("Fusion"));
+
+  QPalette palette;
+  if (theme == "harbor") {
+    palette.setColor(QPalette::Window, QColor(232, 240, 244));
+    palette.setColor(QPalette::WindowText, QColor(24, 48, 61));
+    palette.setColor(QPalette::Base, QColor(248, 252, 253));
+    palette.setColor(QPalette::AlternateBase, QColor(224, 237, 241));
+    palette.setColor(QPalette::Text, QColor(24, 48, 61));
+    palette.setColor(QPalette::Button, QColor(238, 246, 248));
+    palette.setColor(QPalette::ButtonText, QColor(24, 48, 61));
+    palette.setColor(QPalette::Highlight, QColor(25, 107, 123));
+    palette.setColor(QPalette::HighlightedText, Qt::white);
+    palette.setColor(QPalette::Link, QColor(19, 92, 111));
+    palette.setColor(QPalette::Light, QColor(255, 255, 255));
+    palette.setColor(QPalette::Midlight, QColor(211, 229, 234));
+    palette.setColor(QPalette::Mid, QColor(157, 185, 194));
+    palette.setColor(QPalette::Dark, QColor(71, 113, 126));
+  } else if (theme == "sand") {
+    palette.setColor(QPalette::Window, QColor(244, 240, 232));
+    palette.setColor(QPalette::WindowText, QColor(55, 45, 36));
+    palette.setColor(QPalette::Base, QColor(255, 253, 248));
+    palette.setColor(QPalette::AlternateBase, QColor(239, 232, 219));
+    palette.setColor(QPalette::Text, QColor(55, 45, 36));
+    palette.setColor(QPalette::Button, QColor(249, 245, 237));
+    palette.setColor(QPalette::ButtonText, QColor(55, 45, 36));
+    palette.setColor(QPalette::Highlight, QColor(153, 82, 49));
+    palette.setColor(QPalette::HighlightedText, Qt::white);
+    palette.setColor(QPalette::Link, QColor(135, 67, 38));
+    palette.setColor(QPalette::Light, QColor(255, 255, 255));
+    palette.setColor(QPalette::Midlight, QColor(232, 222, 205));
+    palette.setColor(QPalette::Mid, QColor(190, 171, 145));
+    palette.setColor(QPalette::Dark, QColor(117, 91, 68));
+  } else if (theme == "graphite") {
+    palette.setColor(QPalette::Window, QColor(38, 42, 46));
+    palette.setColor(QPalette::WindowText, QColor(238, 241, 243));
+    palette.setColor(QPalette::Base, QColor(27, 30, 33));
+    palette.setColor(QPalette::AlternateBase, QColor(45, 50, 54));
+    palette.setColor(QPalette::Text, QColor(238, 241, 243));
+    palette.setColor(QPalette::Button, QColor(49, 54, 59));
+    palette.setColor(QPalette::ButtonText, QColor(238, 241, 243));
+    palette.setColor(QPalette::Highlight, QColor(73, 146, 153));
+    palette.setColor(QPalette::HighlightedText, QColor(10, 22, 24));
+    palette.setColor(QPalette::Link, QColor(112, 191, 198));
+    palette.setColor(QPalette::Light, QColor(77, 83, 89));
+    palette.setColor(QPalette::Midlight, QColor(59, 65, 70));
+    palette.setColor(QPalette::Mid, QColor(84, 91, 97));
+    palette.setColor(QPalette::Dark, QColor(145, 154, 161));
+  } else if (theme == "midnight") {
+    palette.setColor(QPalette::Window, QColor(22, 31, 46));
+    palette.setColor(QPalette::WindowText, QColor(232, 239, 248));
+    palette.setColor(QPalette::Base, QColor(14, 21, 33));
+    palette.setColor(QPalette::AlternateBase, QColor(27, 39, 57));
+    palette.setColor(QPalette::Text, QColor(232, 239, 248));
+    palette.setColor(QPalette::Button, QColor(31, 45, 64));
+    palette.setColor(QPalette::ButtonText, QColor(232, 239, 248));
+    palette.setColor(QPalette::Highlight, QColor(68, 137, 196));
+    palette.setColor(QPalette::HighlightedText, Qt::white);
+    palette.setColor(QPalette::Link, QColor(111, 181, 237));
+    palette.setColor(QPalette::Light, QColor(58, 78, 103));
+    palette.setColor(QPalette::Midlight, QColor(40, 57, 79));
+    palette.setColor(QPalette::Mid, QColor(72, 91, 115));
+    palette.setColor(QPalette::Dark, QColor(137, 157, 181));
+  } else {
+    palette.setColor(QPalette::Window, QColor(244, 246, 248));
+    palette.setColor(QPalette::WindowText, QColor(35, 43, 52));
+    palette.setColor(QPalette::Base, QColor(255, 255, 255));
+    palette.setColor(QPalette::AlternateBase, QColor(248, 250, 252));
+    palette.setColor(QPalette::Text, QColor(35, 43, 52));
+    palette.setColor(QPalette::Button, QColor(248, 250, 252));
+    palette.setColor(QPalette::ButtonText, QColor(35, 43, 52));
+    palette.setColor(QPalette::Highlight, QColor(53, 126, 174));
+    palette.setColor(QPalette::HighlightedText, Qt::white);
+    palette.setColor(QPalette::Link, QColor(32, 105, 160));
+    palette.setColor(QPalette::Light, QColor(255, 255, 255));
+    palette.setColor(QPalette::Midlight, QColor(231, 237, 242));
+    palette.setColor(QPalette::Mid, QColor(190, 202, 212));
+    palette.setColor(QPalette::Dark, QColor(91, 119, 139));
+  }
+
+  palette.setColor(QPalette::ToolTipBase, palette.color(QPalette::WindowText));
+  palette.setColor(QPalette::ToolTipText, palette.color(QPalette::Base));
+  palette.setColor(QPalette::BrightText, QColor(218, 72, 72));
+  palette.setColor(QPalette::Disabled, QPalette::Text,
+                   palette.color(QPalette::Mid));
+  palette.setColor(QPalette::Disabled, QPalette::ButtonText,
+                   palette.color(QPalette::Mid));
+  qApp->setPalette(palette);
+
+  qApp->setStyleSheet(R"(
+    QMainWindow, QDialog { background-color: palette(window); }
+    QMenuBar {
+      background-color: palette(button);
+      color: palette(button-text);
+      border-bottom: 1px solid palette(mid);
+      padding: 2px;
+    }
+    QMenuBar::item {
+      color: palette(button-text);
+      border-radius: 4px;
+      padding: 5px 9px;
+    }
+    QMenuBar::item:selected {
+      background-color: palette(midlight);
+      color: palette(window-text);
+    }
+    QMenuBar::item:disabled { color: palette(dark); }
+    QMenu {
+      background-color: palette(base);
+      color: palette(text);
+      border: 1px solid palette(mid);
+      padding: 4px;
+    }
+    QMenu::item {
+      color: palette(text);
+      border-radius: 4px;
+      padding: 6px 28px 6px 24px;
+    }
+    QMenu::item:selected {
+      background-color: palette(highlight);
+      color: palette(highlighted-text);
+    }
+    QMenu::item:disabled { color: palette(dark); }
+    QPushButton, QToolButton {
+      background-color: palette(button);
+      color: palette(button-text);
+      border: 1px solid palette(mid);
+      border-radius: 5px;
+      padding: 4px 7px;
+    }
+    QPushButton:hover, QToolButton:hover {
+      background-color: palette(midlight);
+      border-color: palette(dark);
+    }
+    QPushButton:pressed, QToolButton:pressed,
+    QPushButton:checked, QToolButton:checked {
+      background-color: palette(highlight);
+      color: palette(highlighted-text);
+      border-color: palette(highlight);
+    }
+    QPushButton:focus, QToolButton:focus { border-color: palette(highlight); }
+    QPushButton:disabled, QToolButton:disabled {
+      background-color: palette(window);
+      color: palette(mid);
+      border-color: palette(midlight);
+    }
+    QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QSpinBox,
+    QDoubleSpinBox, QDateEdit, QTimeEdit, QDateTimeEdit {
+      background-color: palette(base);
+      color: palette(text);
+      border: 1px solid palette(mid);
+      border-radius: 5px;
+      padding: 4px 6px;
+      selection-background-color: palette(highlight);
+      selection-color: palette(highlighted-text);
+    }
+    QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover,
+    QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {
+      border-color: palette(dark);
+    }
+    QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus,
+    QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+      border-color: palette(highlight);
+    }
+    QComboBox::drop-down { border: 0; width: 22px; }
+    QTreeView, QListView, QTableView {
+      background-color: palette(base);
+      alternate-background-color: palette(alternate-base);
+      color: palette(text);
+      border: 1px solid palette(mid);
+      border-radius: 5px;
+      outline: 0;
+    }
+    QTreeView::item, QListView::item, QTableView::item { padding: 3px; }
+    QTreeView::item:hover, QListView::item:hover, QTableView::item:hover {
+      background-color: palette(midlight);
+    }
+    QTreeView::item:selected, QListView::item:selected,
+    QTableView::item:selected {
+      background-color: palette(highlight);
+      color: palette(highlighted-text);
+    }
+    QHeaderView::section {
+      background-color: palette(midlight);
+      color: palette(window-text);
+      border: 0;
+      border-right: 1px solid palette(mid);
+      border-bottom: 1px solid palette(mid);
+      padding: 5px 7px;
+    }
+    QTabWidget::pane {
+      background-color: palette(base);
+      border: 1px solid palette(mid);
+      border-radius: 5px;
+      top: -1px;
+    }
+    QTabBar::tab {
+      background-color: palette(midlight);
+      color: palette(window-text);
+      border: 1px solid palette(mid);
+      border-bottom: 0;
+      border-top-left-radius: 5px;
+      border-top-right-radius: 5px;
+      padding: 6px 11px;
+      margin-right: 2px;
+    }
+    QTabBar::tab:hover { background-color: palette(button); }
+    QTabBar::tab:selected {
+      background-color: palette(base);
+      color: palette(link);
+    }
+    QGroupBox {
+      border: 1px solid palette(mid);
+      border-radius: 6px;
+      margin-top: 8px;
+      padding-top: 7px;
+    }
+    QGroupBox::title {
+      subcontrol-origin: margin;
+      left: 9px;
+      padding: 0 4px;
+      color: palette(window-text);
+    }
+    QCheckBox, QRadioButton { spacing: 6px; }
+    QCheckBox::indicator, QRadioButton::indicator { width: 15px; height: 15px; }
+    QProgressBar {
+      background-color: palette(midlight);
+      color: palette(text);
+      border: 0;
+      border-radius: 4px;
+      text-align: center;
+    }
+    QProgressBar::chunk { background-color: palette(highlight); border-radius: 4px; }
+    QStatusBar {
+      background-color: palette(button);
+      border-top: 1px solid palette(mid);
+      color: palette(window-text);
+    }
+    QToolTip {
+      background-color: palette(tooltip-base);
+      color: palette(tooltip-text);
+      border: 1px solid palette(dark);
+      padding: 4px 6px;
+    }
+    QScrollBar:vertical { background: palette(window); width: 12px; margin: 0; }
+    QScrollBar::handle:vertical {
+      background: palette(mid);
+      border-radius: 5px;
+      min-height: 24px;
+      margin: 2px;
+    }
+    QScrollBar::handle:vertical:hover { background: palette(dark); }
+    QScrollBar:horizontal { background: palette(window); height: 12px; margin: 0; }
+    QScrollBar::handle:horizontal {
+      background: palette(mid);
+      border-radius: 5px;
+      min-width: 24px;
+      margin: 2px;
+    }
+    QScrollBar::handle:horizontal:hover { background: palette(dark); }
+    QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
+  )");
+}
+} // namespace
 MainWindow::MainWindow() {
   ui.setupUi(this);
 
@@ -28,67 +294,25 @@ MainWindow::MainWindow() {
 
 #if !defined(Q_OS_MACOS)
   auto settings = GetSettings();
-  bool darkMode = settings->value("Settings/darkMode").toBool();
-
-  // enable dark mode for Windows and Linux
-  if (darkMode) {
-    qApp->setStyle(QStyleFactory::create("Fusion"));
-
-    QPalette darkPalette;
-    darkPalette.setColor(QPalette::Window, QColor(53, 53, 53));
-    darkPalette.setColor(QPalette::WindowText, Qt::white);
-    darkPalette.setColor(QPalette::Base, QColor(25, 25, 25));
-    darkPalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-    darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
-    darkPalette.setColor(QPalette::ToolTipText, Qt::white);
-    darkPalette.setColor(QPalette::Text, Qt::white);
-    darkPalette.setColor(QPalette::Button, QColor(53, 53, 53));
-    darkPalette.setColor(QPalette::ButtonText, Qt::white);
-    darkPalette.setColor(QPalette::BrightText, Qt::red);
-    darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
-
-    darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
-    darkPalette.setColor(QPalette::HighlightedText, Qt::black);
-
-    qApp->setPalette(darkPalette);
-
-    qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; "
-                        "border: 1px solid white; }");
+  QString theme = settings->value("Settings/theme").toString();
+  if (theme.isEmpty()) {
+    theme = settings->value("Settings/darkMode", false).toBool()
+                ? "graphite"
+                : "glacier";
   }
-
+  ApplyTheme(theme);
 #else
-
-  // enable dark mode for older macOS
   QString sysInfo = QSysInfo::productVersion();
-
   if (sysInfo == "10.9" || sysInfo == "10.10" || sysInfo == "10.11" ||
       sysInfo == "10.12" || sysInfo == "10.13") {
     auto settings = GetSettings();
-    bool darkMode = settings->value("Settings/darkMode").toBool();
-    if (darkMode) {
-      qApp->setStyle(QStyleFactory::create("Fusion"));
-
-      QPalette darkPalette;
-      darkPalette.setColor(QPalette::Window, QColor(53, 53, 53));
-      darkPalette.setColor(QPalette::WindowText, Qt::white);
-      darkPalette.setColor(QPalette::Base, QColor(25, 25, 25));
-      darkPalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-      darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
-      darkPalette.setColor(QPalette::ToolTipText, Qt::white);
-      darkPalette.setColor(QPalette::Text, Qt::white);
-      darkPalette.setColor(QPalette::Button, QColor(53, 53, 53));
-      darkPalette.setColor(QPalette::ButtonText, Qt::white);
-      darkPalette.setColor(QPalette::BrightText, Qt::red);
-      darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
-
-      darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
-      darkPalette.setColor(QPalette::HighlightedText, Qt::black);
-
-      qApp->setPalette(darkPalette);
-
-      qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: "
-                          "#2a82da; border: 1px solid white; }");
+    QString theme = settings->value("Settings/theme").toString();
+    if (theme.isEmpty()) {
+      theme = settings->value("Settings/darkMode", false).toBool()
+                  ? "graphite"
+                  : "glacier";
     }
+    ApplyTheme(theme);
   }
 #endif
 
@@ -177,8 +401,22 @@ MainWindow::MainWindow() {
       settings->setValue("Settings/showFileIcons", dialog.getShowFileIcons());
       settings->setValue("Settings/rowColors", dialog.getRowColors());
       settings->setValue("Settings/showHidden", dialog.getShowHidden());
-      settings->setValue("Settings/darkMode", dialog.getDarkMode());
+      const QString theme = dialog.getTheme();
+      const bool darkTheme = theme == "graphite" || theme == "midnight";
+      settings->setValue("Settings/theme", theme);
+      settings->setValue("Settings/darkMode", darkTheme);
+      settings->setValue("Settings/darkModeIni", darkTheme);
       settings->setValue("Settings/iconSize", dialog.getIconSize().trimmed());
+
+#if !defined(Q_OS_MACOS)
+      ApplyTheme(theme);
+#else
+      const QString sysInfo = QSysInfo::productVersion();
+      if (sysInfo == "10.9" || sysInfo == "10.10" || sysInfo == "10.11" ||
+          sysInfo == "10.12" || sysInfo == "10.13") {
+        ApplyTheme(theme);
+      }
+#endif
 
       const QString previousLanguage =
           settings->value("Settings/language", "en").toString();

@@ -495,19 +495,44 @@
             <translation>修改以上选项后需要重新打开远程标签页。</translation>
         </message>
         <message>
-            <location filename="../src/preferences_dialog.ui" line="456" />
-            <source>Changing this option will require restarting the app.</source>
-            <translation>修改此选项后需要重新启动应用。</translation>
+            <location filename="../src/preferences_dialog.ui" line="453" />
+            <source>Theme:</source>
+            <translation>主题：</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.ui" line="464" />
+            <source>Glacier Light</source>
+            <translation>冰川浅色</translation>
         </message>
         <message>
             <location filename="../src/preferences_dialog.ui" line="469" />
-            <source>Show folder icons</source>
-            <translation>显示文件夹图标</translation>
+            <source>Harbor Blue</source>
+            <translation>港湾蓝</translation>
         </message>
         <message>
-            <location filename="../src/preferences_dialog.ui" line="476" />
-            <source>Enable dark mode</source>
-            <translation>启用深色模式</translation>
+            <location filename="../src/preferences_dialog.ui" line="474" />
+            <source>Warm Sand</source>
+            <translation>暖沙</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.ui" line="479" />
+            <source>Graphite</source>
+            <translation>石墨</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.ui" line="484" />
+            <source>Midnight Blue</source>
+            <translation>午夜蓝</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.ui" line="492" />
+            <source>The selected theme is applied when you confirm these settings.</source>
+            <translation>确认设置后将立即应用所选主题。</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.ui" line="499" />
+            <source>Show folder icons</source>
+            <translation>显示文件夹图标</translation>
         </message>
         <message>
             <location filename="../src/preferences_dialog.ui" line="511" />

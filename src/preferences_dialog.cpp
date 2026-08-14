@@ -123,17 +123,25 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
       settings->value("Settings/rowColors", true).toBool());
   ui.showHidden->setChecked(
       settings->value("Settings/showHidden", true).toBool());
-  ui.darkMode->setChecked(settings->value("Settings/darkMode", true).toBool());
 
-// dark mode option for all systems but latest macOS
-// on macOS Mojave or newer dark mode is managed by OS
+  QString theme = settings->value("Settings/theme").toString();
+  if (theme.isEmpty()) {
+    theme = settings->value("Settings/darkMode", false).toBool()
+                ? "graphite"
+                : "glacier";
+  }
+  const QStringList themes = {"glacier", "harbor", "sand", "graphite",
+                              "midnight"};
+  int themeIndex = themes.indexOf(theme);
+  ui.theme->setCurrentIndex(themeIndex < 0 ? 0 : themeIndex);
+
 #if defined(Q_OS_MACOS)
   QString sysInfo = QSysInfo::productVersion();
-  if (sysInfo == "10.9" || sysInfo == "10.10" || sysInfo == "10.11" ||
-      sysInfo == "10.12" || sysInfo == "10.13") {
-  } else {
-    ui.darkMode->hide();
-    ui.darkMode_info->hide();
+  if (sysInfo != "10.9" && sysInfo != "10.10" && sysInfo != "10.11" &&
+      sysInfo != "10.12" && sysInfo != "10.13") {
+    ui.labelTheme->hide();
+    ui.theme->hide();
+    ui.themeInfo->hide();
   }
 #endif
 
@@ -238,7 +246,11 @@ bool PreferencesDialog::getShowHidden() const {
   return ui.showHidden->isChecked();
 }
 
-bool PreferencesDialog::getDarkMode() const { return ui.darkMode->isChecked(); }
+QString PreferencesDialog::getTheme() const {
+  const QStringList themes = {"glacier", "harbor", "sand", "graphite",
+                              "midnight"};
+  return themes.value(ui.theme->currentIndex(), "glacier");
+}
 
 QString PreferencesDialog::getIconSize() const {
   if (ui.cb_small->isChecked()) {

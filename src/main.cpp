@@ -88,22 +88,21 @@ int main(int argc, char *argv[]) {
     qputenv("no_proxy", settings->value("Settings/no_proxy").toByteArray());
   }
 
-  // remmber darkMode state on app startup
-  // during first run the darkModeIni key might not exist
+  // Preserve the legacy dark-mode keys while migrating to named themes.
   if (!(settings->contains("Settings/darkModeIni"))) {
-    // if darkModeIni does not exist create new key
     settings->setValue("Settings/darkModeIni", "false");
   };
 
-  // during first run the darkMode key might not exist
   if (!(settings->contains("Settings/darkMode"))) {
-    // if darkMode does not exist create new key
     settings->setValue("Settings/darkMode", "false");
   };
 
   bool darkMode = settings->value("Settings/darkMode").toBool();
-
   settings->setValue("Settings/darkModeIni", darkMode);
+
+  if (!(settings->contains("Settings/theme"))) {
+    settings->setValue("Settings/theme", darkMode ? "graphite" : "glacier");
+  }
 
   // during first run the iconSize key might not exist
   if (!(settings->contains("Settings/iconSize"))) {
