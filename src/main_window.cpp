@@ -222,6 +222,7 @@ MainWindow::MainWindow() {
         this, "Rclone Browser",
         QString(
             R"(<h3>GUI for rclone, v)" RCLONE_BROWSER_VERSION "</h3>"
+            R"(<p>Build time: )" RCLONE_BROWSER_BUILD_TIME "</p>"
             R"(<p>Copyright &copy; 2026</p>)"
 
             R"(<p>Current maintainer<br /><a href="https://github.com/xrp001/RcloneBrowser">xrp001</a></p>)"

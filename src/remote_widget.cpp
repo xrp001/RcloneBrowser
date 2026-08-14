@@ -852,19 +852,20 @@ RemoteWidget::~RemoteWidget() {
 
 void RemoteWidget::resizeEvent(QResizeEvent *event) {
   QWidget::resizeEvent(event);
-  arrangeButtons();
+  QTimer::singleShot(0, this, [=]() {
+    arrangeButtons();
+  });
 }
 
 void RemoteWidget::arrangeButtons() {
-  // Always collect buttons first (they might be in different rows)
-  QList<QWidget*> buttons;
-  buttons << ui.buttonRefresh << ui.buttonMkdir << ui.buttonRename << ui.buttonMove
-          << ui.buttonPurge << ui.buttonMount << ui.buttonStream << ui.buttonUpload
-          << ui.buttonDownload << ui.buttonSize << ui.buttonTree << ui.buttonLink
-          << ui.buttonHead << ui.buttonExport;
+  QList<QWidget *> buttons;
+  buttons << ui.buttonRefresh << ui.buttonMkdir << ui.buttonRename
+          << ui.buttonMove << ui.buttonPurge << ui.buttonMount
+          << ui.buttonStream << ui.buttonUpload << ui.buttonDownload
+          << ui.buttonSize << ui.buttonTree << ui.buttonLink << ui.buttonHead
+          << ui.buttonExport;
 
-  // Find tags button
-  for (QWidget *child : ui.buttons->findChildren<QWidget*>()) {
+  for (QWidget *child : ui.buttons->findChildren<QWidget *>()) {
     if (child->objectName() == "buttonTags") {
       buttons.insert(buttons.indexOf(ui.buttonExport), child);
       break;
@@ -872,37 +873,38 @@ void RemoteWidget::arrangeButtons() {
   }
 
   QGridLayout *layout = ui.horizontalLayout_2;
-
-  // Clear layout completely
   while (layout->count() > 0) {
-    layout->takeAt(0);
-    // Do NOT delete items, just remove from layout
+    delete layout->takeAt(0);
+  }
+  layout->setSizeConstraint(QLayout::SetNoConstraint);
+
+  const int availableWidth = qMax(1, ui.buttons->contentsRect().width());
+  const int spacing = layout->horizontalSpacing();
+  int x = 0;
+  int y = 0;
+  int rowHeight = 0;
+
+  if (!ui.checkBoxShared->isHidden()) {
+    buttons << ui.checkBoxShared;
   }
 
-  int row = 0;
-  int column = 0;
-  int availableWidth = ui.buttons->width() - 80; // increase safety margin for scrollbars/frames
-  int currentRowWidth = 0;
-  const int spacing = 8; // fixed spacing instead of layout->horizontalSpacing()
-
-  // Recalculate layout
   for (QWidget *button : buttons) {
-    int buttonWidth = button->sizeHint().width() + spacing;
-
-    // Allow wrap even at first column
-    if (currentRowWidth + buttonWidth > availableWidth) {
-      row++;
-      column = 0;
-      currentRowWidth = 0;
+    if (button->isHidden()) {
+      continue;
     }
 
-    layout->addWidget(button, row, column);
-    column++;
-    currentRowWidth += buttonWidth;
+    const QSize buttonSize = button->sizeHint();
+    if (x > 0 && x + buttonSize.width() > availableWidth) {
+      x = 0;
+      y += rowHeight + spacing;
+      rowHeight = 0;
+    }
+
+    button->setGeometry(x, y, buttonSize.width(), buttonSize.height());
+    x += buttonSize.width() + spacing;
+    rowHeight = qMax(rowHeight, buttonSize.height());
   }
 
-  // Add right-aligned items
-  layout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum), row, column++);
-  layout->addWidget(ui.checkBoxShared, row, column++);
-  layout->addItem(new QSpacerItem(10, 20, QSizePolicy::Minimum, QSizePolicy::Minimum), row, column++);
+  ui.buttons->setMinimumWidth(0);
+  ui.buttons->setFixedHeight(y + rowHeight);
 }

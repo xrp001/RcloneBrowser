@@ -22,5 +22,6 @@ private:
   Ui::MountWidget ui;
 
   bool mRunning = true;
+  bool mClosing = false;
   QProcess *mProcess;
 };

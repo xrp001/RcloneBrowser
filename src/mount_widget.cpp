@@ -71,6 +71,9 @@ MountWidget::MountWidget(QProcess *process, const QString &remote,
                      }
                      ui.cancel->setToolTip("Close");
                      emit finished();
+                     if (mClosing) {
+                       emit closed();
+                     }
                    });
 
   ui.showDetails->setStyleSheet("QToolButton { border: 0; color: green; }");
@@ -83,6 +86,10 @@ void MountWidget::cancel() {
   if (!mRunning) {
     return;
   }
+
+  mClosing = true;
+  ui.cancel->setEnabled(false);
+  ui.showDetails->setText("Unmounting...");
 
   QString cmd;
 
@@ -111,8 +118,4 @@ void MountWidget::cancel() {
                                             << "-u" << ui.folder->text());
 #endif
 #endif
-
-  mProcess->waitForFinished();
-
-  emit closed();
 }
