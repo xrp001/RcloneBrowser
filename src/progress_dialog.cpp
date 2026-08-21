@@ -9,7 +9,9 @@ ProgressDialog::ProgressDialog(const QString &title, const QString &operation,
 
   setWindowTitle(title);
   ui.labelOperation->setText(operation);
+  ui.labelOperation->setAlignment(Qt::AlignLeft | Qt::AlignTop);
   ui.labelInfo->setText(message);
+  ui.labelInfo->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
   ui.output->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
   ui.output->setVisible(false);

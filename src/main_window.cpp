@@ -13,6 +13,11 @@
 #endif
 
 namespace {
+const char kRcloneBrowserLatestReleaseApi[] =
+    "https://api.github.com/repos/xrp001/RcloneBrowser/releases/latest";
+const char kRcloneBrowserLatestReleasePage[] =
+    "https://github.com/xrp001/RcloneBrowser/releases/latest";
+
 void ApplyTheme(const QString &theme) {
   qApp->setStyle(QStyleFactory::create("Fusion"));
 
@@ -94,8 +99,8 @@ void ApplyTheme(const QString &theme) {
     palette.setColor(QPalette::Dark, QColor(91, 119, 139));
   }
 
-  palette.setColor(QPalette::ToolTipBase, palette.color(QPalette::WindowText));
-  palette.setColor(QPalette::ToolTipText, palette.color(QPalette::Base));
+  palette.setColor(QPalette::ToolTipBase, palette.color(QPalette::Base));
+  palette.setColor(QPalette::ToolTipText, palette.color(QPalette::Text));
   palette.setColor(QPalette::BrightText, QColor(218, 72, 72));
   palette.setColor(QPalette::Disabled, QPalette::Text,
                    palette.color(QPalette::Mid));
@@ -160,8 +165,8 @@ void ApplyTheme(const QString &theme) {
       color: palette(mid);
       border-color: palette(midlight);
     }
-    QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QSpinBox,
-    QDoubleSpinBox, QDateEdit, QTimeEdit, QDateTimeEdit {
+    QLineEdit, QTextEdit, QPlainTextEdit, QComboBox,
+    QDateEdit, QTimeEdit, QDateTimeEdit {
       background-color: palette(base);
       color: palette(text);
       border: 1px solid palette(mid);
@@ -171,11 +176,11 @@ void ApplyTheme(const QString &theme) {
       selection-color: palette(highlighted-text);
     }
     QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover,
-    QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {
+    QComboBox:hover {
       border-color: palette(dark);
     }
     QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus,
-    QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+    QComboBox:focus {
       border-color: palette(highlight);
     }
     QComboBox::drop-down { border: 0; width: 22px; }
@@ -612,6 +617,17 @@ MainWindow::MainWindow() {
   ui.statusBar->addWidget(mStatusMessage);
   ui.statusBar->setStyleSheet("QStatusBar::item { border: 0; }");
 
+  mUpdateTimeout.setSingleShot(true);
+  QObject::connect(&mUpdateTimeout, &QTimer::timeout, this, [=]() {
+    if (!mUpdateReply) {
+      return;
+    }
+    QNetworkReply *reply = mUpdateReply;
+    mUpdateReply = nullptr;
+    reply->abort();
+    reply->deleteLater();
+  });
+
   QTimer::singleShot(0, ui.remotes, SLOT(setFocus()));
 
   QString rclone = GetRclone();
@@ -858,80 +874,9 @@ void MainWindow::rcloneGetVersion() {
           };
         };
 
-        /// check rclone browser version
-
-        // during first run the key might not exist yet
-        if (!(settings->contains("Settings/checkRcloneBrowserUpdates"))) {
-          // if checkRcloneBrowserUpdates does not exist create new key
-          settings->setValue("Settings/checkRcloneBrowserUpdates", true);
-        };
-
-        bool checkRcloneBrowserUpdates =
-            settings->value("Settings/checkRcloneBrowserUpdates").toBool();
-
-        // if check updates enabled in settings
-        if (checkRcloneBrowserUpdates) {
-          QString last_check;
-          QString current_date = QDate::currentDate().toString();
-
-          if (!(settings->contains("Settings/lastRcloneBrowserUpdateCheck"))) {
-            // if lastRcloneBrowserUpdateCheck does not exist create new key
-            settings->setValue("Settings/lastRcloneBrowserUpdateCheck",
-                               current_date);
-          } else { // read last check date
-            last_check =
-                settings->value("Settings/lastRcloneBrowserUpdateCheck")
-                    .toString();
-          };
-
-          // dont check if already checked today (once per day only)
-          if (!(last_check == current_date)) {
-            // remmber when last checked
-            settings->setValue("Settings/lastRcloneBrowserUpdateCheck",
-                               current_date);
-
-            // get latest version available
-            QString url = "https://api.github.com/repos/kapitainsky/"
-                          "rclonebrowser/releases/latest";
-            QNetworkAccessManager manager;
-            QNetworkReply *response = manager.get(QNetworkRequest(QUrl(url)));
-            QEventLoop event;
-            connect(response, SIGNAL(finished()), &event, SLOT(quit()));
-            event.exec();
-            QByteArray content = response->readAll();
-
-            QJsonParseError jsonError;
-            QJsonDocument document = QJsonDocument::fromJson(
-                content, &jsonError); // parse and capture the error flag
-
-            if (jsonError.error == QJsonParseError::NoError) {
-              if (document.object().contains("tag_name")) {
-                QJsonValue tag_name = document.object().value("tag_name");
-                QString rclone_browser_latest_version_no =
-                    tag_name.toString(QString());
-                rclone_browser_latest_version_no =
-                    rclone_browser_latest_version_no.trimmed();
-
-                // check if new version available and if yes display information
-                unsigned int result = compareVersion(
-                    rclone_browser_latest_version_no.toStdString(),
-                    RCLONE_BROWSER_VERSION);
-                // latest version is greater than current
-                if (result == 1) {
-                  QMessageBox::information(
-                      this, "",
-                      QString(
-                          R"(<p>New Rclone Browser version is available</p>)"
-                          R"(<p>You have: v)" RCLONE_BROWSER_VERSION "<br />"
-                          R"(New version: v)" +
-                          rclone_browser_latest_version_no +
-                          "</p>"
-                          R"(<p>Visit <a href="https://github.com/kapitainsky/RcloneBrowser/releases/latest">releases</a> page to download</p>)"));
-                };
-              };
-            };
-          };
-        };
+        if (firstTime) {
+          checkRcloneBrowserUpdates();
+        }
 
         p->deleteLater();
       });
@@ -941,6 +886,83 @@ void MainWindow::rcloneGetVersion() {
            QStringList() << "version"
                          << "--ask-password=false",
            QIODevice::ReadOnly);
+}
+
+void MainWindow::checkRcloneBrowserUpdates() {
+  auto settings = GetSettings();
+  if (!settings->contains("Settings/checkRcloneBrowserUpdates")) {
+    settings->setValue("Settings/checkRcloneBrowserUpdates", true);
+  }
+  if (!settings->value("Settings/checkRcloneBrowserUpdates").toBool() ||
+      mUpdateReply) {
+    return;
+  }
+
+  const QString currentDate = QDate::currentDate().toString(Qt::ISODate);
+  const QString lastCheck =
+      settings->value("Settings/lastRcloneBrowserUpdateCheck").toString();
+  if (lastCheck == currentDate ||
+      QDate::fromString(lastCheck).toString(Qt::ISODate) == currentDate) {
+    return;
+  }
+
+  QNetworkRequest request{QUrl(kRcloneBrowserLatestReleaseApi)};
+  request.setRawHeader("User-Agent", "RcloneBrowser");
+  QNetworkReply *reply = mUpdateManager.get(request);
+  mUpdateReply = reply;
+  mUpdateTimeout.start(60000);
+
+  QObject::connect(reply, &QNetworkReply::finished, this, [=]() {
+    if (mUpdateReply != reply) {
+      return;
+    }
+
+    mUpdateTimeout.stop();
+    mUpdateReply = nullptr;
+
+    if (reply->error() != QNetworkReply::NoError ||
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() !=
+            200) {
+      reply->deleteLater();
+      return;
+    }
+
+    QJsonParseError jsonError;
+    const QJsonDocument document =
+        QJsonDocument::fromJson(reply->readAll(), &jsonError);
+    reply->deleteLater();
+    if (jsonError.error != QJsonParseError::NoError ||
+        !document.isObject()) {
+      return;
+    }
+
+    QString latest = document.object().value("tag_name").toString().trimmed();
+    if (latest.startsWith('v', Qt::CaseInsensitive)) {
+      latest.remove(0, 1);
+    }
+    QRegExp versionPattern("^[0-9]+(\\.[0-9]+)*$");
+    if (!versionPattern.exactMatch(latest)) {
+      return;
+    }
+
+    auto updatedSettings = GetSettings();
+    updatedSettings->setValue("Settings/lastRcloneBrowserUpdateCheck",
+                              currentDate);
+    updatedSettings->setValue("Settings/latestRcloneBrowserVersion", latest);
+    updatedSettings->setValue(
+        "Settings/latestRcloneBrowserVersionCheckedAt",
+        QDateTime::currentDateTime().toString(Qt::DefaultLocaleShortDate));
+
+    if (compareVersion(latest.toStdString(), RCLONE_BROWSER_VERSION) == 1) {
+      QMessageBox::information(
+          this, tr("Rclone Browser Update"),
+          tr("<p>New Rclone Browser version is available.</p>"
+             "<p>You have: v%1<br />New version: v%2</p>"
+             "<p>Visit the <a href=\"%3\">releases page</a> to download.</p>")
+              .arg(RCLONE_BROWSER_VERSION, latest,
+                   kRcloneBrowserLatestReleasePage));
+    }
+  });
 }
 
 void MainWindow::rcloneConfig() {

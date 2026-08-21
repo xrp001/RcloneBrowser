@@ -8,6 +8,106 @@
 #include "transfer_dialog.h"
 #include "utils.h"
 
+namespace {
+QLabel *CreatePathLabel(const QString &path, QWidget *parent) {
+  QLabel *label = new QLabel(path, parent);
+  label->setWordWrap(true);
+  label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+  label->setMinimumWidth(0);
+  label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  return label;
+}
+
+bool GetPathText(QWidget *parent, const QString &title, const QString &prompt,
+                 const QString &path, const QString &initial,
+                 QString *result) {
+  QDialog dialog(parent);
+  dialog.setWindowTitle(title);
+  dialog.resize(600, 180);
+
+  QVBoxLayout *layout = new QVBoxLayout(&dialog);
+  layout->addWidget(new QLabel(prompt, &dialog));
+  layout->addWidget(CreatePathLabel(path, &dialog));
+
+  QLineEdit *input = new QLineEdit(initial, &dialog);
+  input->selectAll();
+  layout->addWidget(input);
+
+  QDialogButtonBox *buttons = new QDialogButtonBox(
+      QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  layout->addWidget(buttons);
+
+  QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog,
+                   &QDialog::accept);
+  QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog,
+                   &QDialog::reject);
+
+  input->setFocus();
+  if (dialog.exec() != QDialog::Accepted) {
+    return false;
+  }
+
+  *result = input->text();
+  return true;
+}
+
+bool GetPathMultiLineText(QWidget *parent, const QString &title,
+                          const QString &prompt, const QString &path,
+                          const QString &hint, const QString &initial,
+                          QString *result) {
+  QDialog dialog(parent);
+  dialog.setWindowTitle(title);
+  dialog.resize(720, 420);
+
+  QVBoxLayout *layout = new QVBoxLayout(&dialog);
+  layout->addWidget(new QLabel(prompt, &dialog));
+  layout->addWidget(CreatePathLabel(path, &dialog));
+  layout->addWidget(new QLabel(hint, &dialog));
+
+  QPlainTextEdit *input = new QPlainTextEdit(initial, &dialog);
+  layout->addWidget(input, 1);
+
+  QDialogButtonBox *buttons = new QDialogButtonBox(
+      QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  layout->addWidget(buttons);
+
+  QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog,
+                   &QDialog::accept);
+  QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog,
+                   &QDialog::reject);
+
+  input->setFocus();
+  if (dialog.exec() != QDialog::Accepted) {
+    return false;
+  }
+
+  *result = input->toPlainText();
+  return true;
+}
+
+int ShowPathMessage(QWidget *parent, QMessageBox::Icon icon,
+                    const QString &title, const QString &prompt,
+                    const QString &path, const QString &details,
+                    QMessageBox::StandardButtons buttons) {
+  QString text = prompt + "\n" + path;
+  if (!details.isEmpty()) {
+    text += "\n\n" + details;
+  }
+
+  QMessageBox message(icon, title, text, buttons, parent);
+  message.setTextFormat(Qt::PlainText);
+  message.setSizeGripEnabled(true);
+  if (QLabel *label = message.findChild<QLabel *>("qt_msgbox_label")) {
+    label->setWordWrap(true);
+    label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    label->setMinimumWidth(0);
+    label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  }
+  message.resize(600, message.sizeHint().height());
+  return message.exec();
+}
+} // namespace
+
 RemoteWidget::RemoteWidget(IconCache *iconCache, const QString &remote,
                            bool isLocal, bool isGoogle,
                            const QString &remoteType, QWidget *parent)
@@ -81,6 +181,7 @@ QString root = isLocal ? "/" : QString();
     ui.tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui.tree->resizeColumnToContents(1);
     ui.tree->resizeColumnToContents(2);
+    ui.tree->resizeColumnToContents(3);
   });
 
   QObject::connect(
@@ -182,8 +283,9 @@ QString root = isLocal ? "/" : QString();
     QDir path = model->path(index);
     QString pathMsg =
         isLocal ? QDir::toNativeSeparators(path.path()) : path.path();
-    QString name = QInputDialog::getText(
-        this, "New Folder", QString("Create folder in %1").arg(pathMsg));
+    QString name;
+    GetPathText(this, "New Folder", "Create folder in:", pathMsg, QString(),
+                &name);
     if (!name.isEmpty()) {
       QString folder = path.filePath(name);
       QString folderMsg = isLocal ? QDir::toNativeSeparators(folder) : folder;
@@ -217,9 +319,12 @@ QString root = isLocal ? "/" : QString();
     QString pathMsg = isLocal ? QDir::toNativeSeparators(path) : path;
 
     QString name = model->data(index, Qt::DisplayRole).toString();
-    name = QInputDialog::getText(this, "Rename",
-                                 QString("New name for %1").arg(pathMsg),
-                                 QLineEdit::Normal, name);
+    QString newName;
+    if (!GetPathText(this, "Rename", "New name for:", pathMsg, name,
+                     &newName)) {
+      return;
+    }
+    name = newName;
     if (!name.isEmpty()) {
       QProcess process;
       UseRclonePassword(&process);
@@ -250,9 +355,12 @@ QString root = isLocal ? "/" : QString();
     QString pathMsg = isLocal ? QDir::toNativeSeparators(path) : path;
 
     QString name = model->path(index.parent()).path() + "/";
-    name = QInputDialog::getText(this, "Move",
-                                 QString("New location for %1").arg(pathMsg),
-                                 QLineEdit::Normal, name);
+    QString newLocation;
+    if (!GetPathText(this, "Move", "New location for:", pathMsg, name,
+                     &newLocation)) {
+      return;
+    }
+    name = newLocation;
     if (!name.isEmpty()) {
       QProcess process;
       UseRclonePassword(&process);
@@ -281,9 +389,9 @@ QString root = isLocal ? "/" : QString();
     QString path = model->path(index).path();
     QString pathMsg = isLocal ? QDir::toNativeSeparators(path) : path;
 
-    int button = QMessageBox::question(
-        this, "Delete",
-        QString("Are you sure you want to delete %1 ?").arg(pathMsg),
+    int button = ShowPathMessage(
+        this, QMessageBox::Question, "Delete",
+        "Are you sure you want to delete:", pathMsg, QString(),
         QMessageBox::Yes | QMessageBox::No);
     if (button == QMessageBox::Yes) {
       QProcess process;
@@ -452,10 +560,9 @@ QString root = isLocal ? "/" : QString();
     QApplication::restoreOverrideCursor();
 
     if (!current.ok) {
-      QMessageBox::warning(this, "Tags",
-                           QString("Failed to fetch S3 object tags for:\n%1\n\n%2")
-                               .arg(pathMsg)
-                               .arg(current.error));
+      ShowPathMessage(this, QMessageBox::Warning, "Tags",
+                      "Failed to fetch S3 object tags for:", pathMsg,
+                      current.error, QMessageBox::Ok);
       return;
     }
 
@@ -471,9 +578,8 @@ QString root = isLocal ? "/" : QString();
     headerLayout->setContentsMargins(0, 0, 0, 0);
 
     QLabel *title =
-        new QLabel(QString("S3 object tags for <b>%1</b>").arg(pathMsg), &dialog);
-    title->setTextFormat(Qt::RichText);
-    title->setWordWrap(true);
+        CreatePathLabel(QString("S3 object tags for:\n%1").arg(pathMsg), &dialog);
+    title->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     QPushButton *setTagsButton = new QPushButton("Set Tags...", &dialog);
     setTagsButton->setIcon(
@@ -530,14 +636,12 @@ QString root = isLocal ? "/" : QString();
 
     QObject::connect(setTagsButton, &QPushButton::clicked, &dialog,
                      [=, &currentTags]() {
-                       bool ok = false;
-                       QString text = QInputDialog::getMultiLineText(
-                           dialogPtr, "Set Tags",
-                           QString("Manage S3 object tags for:\n%1\n\nOne tag "
-                                   "per line: key:value")
-                               .arg(pathMsg),
-                           FormatS3ObjectTags(currentTags), &ok);
-                       if (!ok) {
+                       QString text;
+                       if (!GetPathMultiLineText(
+                               dialogPtr, "Set Tags",
+                               "Manage S3 object tags for:", pathMsg,
+                               "One tag per line: key:value",
+                               FormatS3ObjectTags(currentTags), &text)) {
                          return;
                        }
 
@@ -555,11 +659,10 @@ QString root = isLocal ? "/" : QString();
                        QApplication::restoreOverrideCursor();
 
                        if (!updated.ok) {
-                         QMessageBox::warning(
-                             dialogPtr, "Set Tags",
-                             QString("Failed to set S3 object tags for:\n%1\n\n%2")
-                                 .arg(pathMsg)
-                                 .arg(updated.error));
+                         ShowPathMessage(
+                             dialogPtr, QMessageBox::Warning, "Set Tags",
+                             "Failed to set S3 object tags for:", pathMsg,
+                             updated.error, QMessageBox::Ok);
                          return;
                        }
 

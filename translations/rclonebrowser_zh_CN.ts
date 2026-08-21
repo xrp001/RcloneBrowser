@@ -260,6 +260,16 @@
             <source>The application language will be updated after restarting Rclone Browser.</source>
             <translation>重启 Rclone Browser 后，应用语言将会更新。</translation>
         </message>
+        <message>
+            <location filename="../src/main_window.cpp" line="946" />
+            <source>Rclone Browser Update</source>
+            <translation>Rclone Browser 更新</translation>
+        </message>
+        <message>
+            <location filename="../src/main_window.cpp" line="947" />
+            <source>&lt;p&gt;New Rclone Browser version is available.&lt;/p&gt;&lt;p&gt;You have: v%1&lt;br /&gt;New version: v%2&lt;/p&gt;&lt;p&gt;Visit the &lt;a href=&quot;%3&quot;&gt;releases page&lt;/a&gt; to download.&lt;/p&gt;</source>
+            <translation>&lt;p&gt;有新的 Rclone Browser 版本可用。&lt;/p&gt;&lt;p&gt;当前版本：v%1&lt;br /&gt;新版本：v%2&lt;/p&gt;&lt;p&gt;请访问&lt;a href=&quot;%3&quot;&gt;发布页面&lt;/a&gt;下载。&lt;/p&gt;</translation>
+        </message>
     </context>
     <context>
         <name>MountWidget</name>
@@ -420,7 +430,78 @@
             <translation>检查 Rclone Browser 更新</translation>
         </message>
         <message>
-            <location filename="../src/preferences_dialog.ui" line="313" />
+            <location filename="../src/preferences_dialog.ui" line="328" />
+            <source>Check Now</source>
+            <translation>立即检查</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.cpp" line="120" />
+            <source>Update check timed out after 1 minute.</source>
+            <translation>检查更新在 1 分钟后超时。</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.cpp" line="133" />
+            <location filename="../src/preferences_dialog.cpp" line="285" />
+            <source>New release: v%1 — &lt;a href=&quot;%2&quot;&gt;Download&lt;/a&gt; (checked %3)</source>
+            <translation>发现新版本：v%1 — &lt;a href=&quot;%2&quot;&gt;下载&lt;/a&gt;（检查于 %3）</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.cpp" line="137" />
+            <location filename="../src/preferences_dialog.cpp" line="289" />
+            <source>Latest release: v%1 (checked %2)</source>
+            <translation>最新版本：v%1（检查于 %2）</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.cpp" line="218" />
+            <source>Checking for updates...</source>
+            <translation>正在检查更新...</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.cpp" line="239" />
+            <source>Update check failed: %1</source>
+            <translation>检查更新失败：%1</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.cpp" line="248" />
+            <source>Update check failed: HTTP %1</source>
+            <translation>检查更新失败：HTTP %1</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.cpp" line="260" />
+            <location filename="../src/preferences_dialog.cpp" line="272" />
+            <source>Update check returned invalid data.</source>
+            <translation>检查更新返回了无效数据。</translation>
+        </message>
+        <message>
+            <source>Checking for rclone updates...</source>
+            <translation>正在检查 rclone 更新...</translation>
+        </message>
+        <message>
+            <source>rclone update check failed: %1</source>
+            <translation>rclone 更新检查失败：%1</translation>
+        </message>
+        <message>
+            <source>rclone update check failed: HTTP %1</source>
+            <translation>rclone 更新检查失败：HTTP %1</translation>
+        </message>
+        <message>
+            <source>rclone update check returned invalid data.</source>
+            <translation>rclone 更新检查返回了无效数据。</translation>
+        </message>
+        <message>
+            <source>New rclone release: v%1 — &lt;a href=&quot;%2&quot;&gt;Download&lt;/a&gt; (checked %3)</source>
+            <translation>发现新版 rclone：v%1 — &lt;a href=&quot;%2&quot;&gt;下载&lt;/a&gt;（检查于 %3）</translation>
+        </message>
+        <message>
+            <source>Latest rclone release: v%1; installed: v%2 (checked %3)</source>
+            <translation>最新 rclone 版本：v%1；已安装：v%2（检查于 %3）</translation>
+        </message>
+        <message>
+            <source>Latest rclone release: v%1 (checked %2)</source>
+            <translation>最新 rclone 版本：v%1（检查于 %2）</translation>
+        </message>
+        <message>
+            <location filename="../src/preferences_dialog.ui" line="359" />
             <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;check daily for rclone availability&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
             <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;每天检查一次 rclone 更新&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
         </message>

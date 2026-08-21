@@ -1,6 +1,16 @@
 #include "preferences_dialog.h"
 #include "utils.h"
 
+namespace {
+const char kRcloneBrowserLatestReleaseApi[] =
+    "https://api.github.com/repos/xrp001/RcloneBrowser/releases/latest";
+const char kRcloneBrowserLatestReleasePage[] =
+    "https://github.com/xrp001/RcloneBrowser/releases/latest";
+const char kRcloneLatestReleaseApi[] =
+    "https://api.github.com/repos/rclone/rclone/releases/latest";
+const char kRcloneDownloadsPage[] = "https://rclone.org/downloads/";
+} // namespace
+
 PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
   ui.setupUi(this);
 
@@ -99,6 +109,68 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
   ui.checkRcloneUpdates->setChecked(
       settings->value("Settings/checkRcloneUpdates", true).toBool());
 
+  mUpdateTimeout.setSingleShot(true);
+  QObject::connect(ui.checkRcloneBrowserUpdatesNow, &QPushButton::clicked, this,
+                   &PreferencesDialog::checkRcloneBrowserUpdates);
+  QObject::connect(&mUpdateTimeout, &QTimer::timeout, this, [=]() {
+    if (!mUpdateReply) {
+      return;
+    }
+    QNetworkReply *reply = mUpdateReply;
+    mUpdateReply = nullptr;
+    reply->abort();
+    reply->deleteLater();
+    ui.checkRcloneBrowserUpdatesNow->setEnabled(true);
+    setRcloneBrowserUpdateStatus(tr("Update check timed out after 1 minute."));
+  });
+
+  mRcloneUpdateTimeout.setSingleShot(true);
+  QObject::connect(ui.checkRcloneUpdatesNow, &QPushButton::clicked, this,
+                   &PreferencesDialog::checkRcloneUpdates);
+  QObject::connect(&mRcloneUpdateTimeout, &QTimer::timeout, this, [=]() {
+    if (!mRcloneUpdateReply) {
+      return;
+    }
+    QNetworkReply *reply = mRcloneUpdateReply;
+    mRcloneUpdateReply = nullptr;
+    reply->abort();
+    reply->deleteLater();
+    ui.checkRcloneUpdatesNow->setEnabled(true);
+    setRcloneUpdateStatus(tr("Update check timed out after 1 minute."));
+  });
+
+  if (settings->contains("Settings/latestRcloneBrowserVersion")) {
+    const QString latest =
+        settings->value("Settings/latestRcloneBrowserVersion").toString();
+    const QString checkedAt =
+        settings->value("Settings/latestRcloneBrowserVersionCheckedAt").toString();
+    if (compareVersion(latest.toStdString(), RCLONE_BROWSER_VERSION) == 1) {
+      setRcloneBrowserUpdateStatus(
+          tr("New release: v%1 — <a href=\"%2\">Download</a> (checked %3)")
+              .arg(latest, kRcloneBrowserLatestReleasePage, checkedAt));
+    } else {
+      setRcloneBrowserUpdateStatus(
+          tr("Latest release: v%1 (checked %2)").arg(latest, checkedAt));
+    }
+  }
+
+  if (settings->contains("Settings/latestRcloneVersion")) {
+    const QString latest =
+        settings->value("Settings/latestRcloneVersion").toString();
+    const QString current = settings->value("Settings/rcloneVersion").toString();
+    const QString checkedAt =
+        settings->value("Settings/latestRcloneVersionCheckedAt").toString();
+    if (!current.isEmpty() &&
+        compareVersion(latest.toStdString(), current.toStdString()) == 1) {
+      setRcloneUpdateStatus(
+          tr("New rclone release: v%1 — <a href=\"%2\">Download</a> (checked %3)")
+              .arg(latest, kRcloneDownloadsPage, checkedAt));
+    } else {
+      setRcloneUpdateStatus(
+          tr("Latest rclone release: v%1 (checked %2)").arg(latest, checkedAt));
+    }
+  }
+
   if (QSystemTrayIcon::isSystemTrayAvailable()) {
     ui.alwaysShowInTray->setChecked(
         settings->value("Settings/alwaysShowInTray", false).toBool());
@@ -177,6 +249,180 @@ PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent) {
 }
 
 PreferencesDialog::~PreferencesDialog() {}
+
+void PreferencesDialog::checkRcloneBrowserUpdates() {
+  if (mUpdateReply) {
+    return;
+  }
+
+  ui.checkRcloneBrowserUpdatesNow->setEnabled(false);
+  setRcloneBrowserUpdateStatus(tr("Checking for updates..."));
+
+  QNetworkRequest request{QUrl(kRcloneBrowserLatestReleaseApi)};
+  request.setRawHeader("User-Agent", "RcloneBrowser");
+  QNetworkReply *reply = mUpdateManager.get(request);
+  mUpdateReply = reply;
+  mUpdateTimeout.start(60000);
+
+  QObject::connect(reply, &QNetworkReply::finished, this, [=]() {
+    if (mUpdateReply != reply) {
+      return;
+    }
+
+    mUpdateTimeout.stop();
+    mUpdateReply = nullptr;
+    ui.checkRcloneBrowserUpdatesNow->setEnabled(true);
+
+    if (reply->error() != QNetworkReply::NoError) {
+      setRcloneBrowserUpdateStatus(
+          tr("Update check failed: %1").arg(reply->errorString()));
+      reply->deleteLater();
+      return;
+    }
+
+    const int status =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (status != 200) {
+      setRcloneBrowserUpdateStatus(
+          tr("Update check failed: HTTP %1").arg(status));
+      reply->deleteLater();
+      return;
+    }
+
+    QJsonParseError jsonError;
+    const QJsonDocument document =
+        QJsonDocument::fromJson(reply->readAll(), &jsonError);
+    reply->deleteLater();
+
+    if (jsonError.error != QJsonParseError::NoError ||
+        !document.isObject()) {
+      setRcloneBrowserUpdateStatus(tr("Update check returned invalid data."));
+      return;
+    }
+
+    QString latest = document.object().value("tag_name").toString().trimmed();
+    if (latest.startsWith('v', Qt::CaseInsensitive)) {
+      latest.remove(0, 1);
+    }
+
+    QRegExp versionPattern("^[0-9]+(\\.[0-9]+)*$");
+    if (!versionPattern.exactMatch(latest)) {
+      setRcloneBrowserUpdateStatus(tr("Update check returned invalid data."));
+      return;
+    }
+
+    const QString checkedAt =
+        QDateTime::currentDateTime().toString(Qt::DefaultLocaleShortDate);
+    auto settings = GetSettings();
+    settings->setValue("Settings/latestRcloneBrowserVersion", latest);
+    settings->setValue("Settings/latestRcloneBrowserVersionCheckedAt", checkedAt);
+
+    const unsigned int result =
+        compareVersion(latest.toStdString(), RCLONE_BROWSER_VERSION);
+    if (result == 1) {
+      setRcloneBrowserUpdateStatus(
+          tr("New release: v%1 — <a href=\"%2\">Download</a> (checked %3)")
+              .arg(latest, kRcloneBrowserLatestReleasePage, checkedAt));
+    } else {
+      setRcloneBrowserUpdateStatus(
+          tr("Latest release: v%1 (checked %2)").arg(latest, checkedAt));
+    }
+  });
+}
+
+void PreferencesDialog::setRcloneBrowserUpdateStatus(const QString &text) {
+  ui.rcloneBrowserUpdateStatus->setText(text);
+}
+
+void PreferencesDialog::checkRcloneUpdates() {
+  if (mRcloneUpdateReply) {
+    return;
+  }
+
+  ui.checkRcloneUpdatesNow->setEnabled(false);
+  setRcloneUpdateStatus(tr("Checking for rclone updates..."));
+
+  QNetworkRequest request{QUrl(kRcloneLatestReleaseApi)};
+  request.setRawHeader("User-Agent", "RcloneBrowser");
+  QNetworkReply *reply = mRcloneUpdateManager.get(request);
+  mRcloneUpdateReply = reply;
+  mRcloneUpdateTimeout.start(60000);
+
+  QObject::connect(reply, &QNetworkReply::finished, this, [=]() {
+    if (mRcloneUpdateReply != reply) {
+      return;
+    }
+
+    mRcloneUpdateTimeout.stop();
+    mRcloneUpdateReply = nullptr;
+    ui.checkRcloneUpdatesNow->setEnabled(true);
+
+    if (reply->error() != QNetworkReply::NoError) {
+      setRcloneUpdateStatus(
+          tr("rclone update check failed: %1").arg(reply->errorString()));
+      reply->deleteLater();
+      return;
+    }
+
+    const int status =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (status != 200) {
+      setRcloneUpdateStatus(
+          tr("rclone update check failed: HTTP %1").arg(status));
+      reply->deleteLater();
+      return;
+    }
+
+    QJsonParseError jsonError;
+    const QJsonDocument document =
+        QJsonDocument::fromJson(reply->readAll(), &jsonError);
+    reply->deleteLater();
+    if (jsonError.error != QJsonParseError::NoError ||
+        !document.isObject()) {
+      setRcloneUpdateStatus(
+          tr("rclone update check returned invalid data."));
+      return;
+    }
+
+    QString latest = document.object().value("tag_name").toString().trimmed();
+    if (latest.startsWith('v', Qt::CaseInsensitive)) {
+      latest.remove(0, 1);
+    }
+    latest.replace("-DEV", "");
+
+    QRegExp versionPattern("^[0-9]+(\\.[0-9]+)*$");
+    if (!versionPattern.exactMatch(latest)) {
+      setRcloneUpdateStatus(
+          tr("rclone update check returned invalid data."));
+      return;
+    }
+
+    const QString checkedAt =
+        QDateTime::currentDateTime().toString(Qt::DefaultLocaleShortDate);
+    auto settings = GetSettings();
+    settings->setValue("Settings/latestRcloneVersion", latest);
+    settings->setValue("Settings/latestRcloneVersionCheckedAt", checkedAt);
+
+    const QString current = settings->value("Settings/rcloneVersion").toString();
+    if (!current.isEmpty() &&
+        compareVersion(latest.toStdString(), current.toStdString()) == 1) {
+      setRcloneUpdateStatus(
+          tr("New rclone release: v%1 — <a href=\"%2\">Download</a> (checked %3)")
+              .arg(latest, kRcloneDownloadsPage, checkedAt));
+    } else if (!current.isEmpty()) {
+      setRcloneUpdateStatus(
+          tr("Latest rclone release: v%1; installed: v%2 (checked %3)")
+              .arg(latest, current, checkedAt));
+    } else {
+      setRcloneUpdateStatus(
+          tr("Latest rclone release: v%1 (checked %2)").arg(latest, checkedAt));
+    }
+  });
+}
+
+void PreferencesDialog::setRcloneUpdateStatus(const QString &text) {
+  ui.rcloneUpdateStatus->setText(text);
+}
 
 QString PreferencesDialog::getRclone() const {
   return QDir::fromNativeSeparators(ui.rclone->text());

@@ -45,6 +45,7 @@ private:
   bool canClose();
   void closeEvent(QCloseEvent *ev) override;
   bool getConfigPassword(QProcess *p);
+  void checkRcloneBrowserUpdates();
 
   void addEmptyJobsMessage();
 
@@ -52,4 +53,7 @@ private:
   void editSelectedTask();
   QIcon mUploadIcon;
   QIcon mDownloadIcon;
+  QNetworkAccessManager mUpdateManager;
+  QPointer<QNetworkReply> mUpdateReply;
+  QTimer mUpdateTimeout;
 };

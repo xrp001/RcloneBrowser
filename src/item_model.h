@@ -32,6 +32,7 @@ struct Item {
   QString name;
   QDir path;
   QString modified;
+  QString storageClass;
   quint64 size = 0;
 
   QVector<Item *> childs;
@@ -99,7 +100,6 @@ private:
   Qt::SortOrder mSortOrder;
 
   QRegExp mRegExpFolder;
-  QRegExp mRegExpFile;
 
   Item *get(const QModelIndex &index) const;
   void load(const QPersistentModelIndex &parentIndex, Item *parent);

@@ -41,5 +41,16 @@ public:
   QString getNoProxy() const;
 
 private:
+  void checkRcloneBrowserUpdates();
+  void setRcloneBrowserUpdateStatus(const QString &text);
+  void checkRcloneUpdates();
+  void setRcloneUpdateStatus(const QString &text);
+
   Ui::PreferencesDialog ui;
+  QNetworkAccessManager mUpdateManager;
+  QPointer<QNetworkReply> mUpdateReply;
+  QTimer mUpdateTimeout;
+  QNetworkAccessManager mRcloneUpdateManager;
+  QPointer<QNetworkReply> mRcloneUpdateReply;
+  QTimer mRcloneUpdateTimeout;
 };

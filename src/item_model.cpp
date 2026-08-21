@@ -67,6 +67,19 @@ public:
       }
       return mOrder == Qt::AscendingOrder ? a->modified < b->modified
                                           : b->modified < a->modified;
+
+    case 3:
+      if (a->isFolder != b->isFolder) {
+        return a->isFolder;
+      }
+      if (a->storageClass == b->storageClass) {
+        return mOrder == Qt::AscendingOrder
+                   ? mCompare.compare(a->name, b->name) < 0
+                   : mCompare.compare(b->name, a->name) < 0;
+      }
+      return mOrder == Qt::AscendingOrder
+                 ? mCompare.compare(a->storageClass, b->storageClass) < 0
+                 : mCompare.compare(b->storageClass, a->storageClass) < 0;
     }
     Q_ASSERT(false);
     return false;
@@ -82,8 +95,7 @@ ItemModel::ItemModel(IconCache *icons, const QString &remote, QObject *parent)
     : QAbstractItemModel(parent), mRemote(remote),
       mFixedFont(QFontDatabase::systemFont(QFontDatabase::FixedFont)),
       mRegExpFolder(
-          R"(^[\d-]+ (\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) \s*[\d-]+ (.+)$)"),
-      mRegExpFile(R"(^(\d+) (\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)\.\d+ (.+)$)") {
+          R"(^[\d-]+ (\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) \s*[\d-]+ (.+)$)") {
   QStyle *style = qApp->style();
   mDriveIcon = style->standardIcon(QStyle::SP_DriveNetIcon);
   mFolderIcon = style->standardIcon(QStyle::SP_DirIcon);
@@ -212,7 +224,7 @@ int ItemModel::rowCount(const QModelIndex &parent) const {
 
 int ItemModel::columnCount(const QModelIndex &parent) const {
   Q_UNUSED(parent);
-  return 3;
+  return 4;
 }
 
 void ItemModel::sort(int column, Qt::SortOrder order) {
@@ -272,6 +284,11 @@ QVariant ItemModel::data(const QModelIndex &index, int role) const {
       }
     case 2:
       return item->modified;
+    case 3:
+      if (item->isFolder || item->state == Item::Special) {
+        return QString();
+      }
+      return item->storageClass;
     }
     Q_ASSERT(false);
   }
@@ -288,6 +305,8 @@ QVariant ItemModel::headerData(int section, Qt::Orientation orientation,
       return "Size";
     case 2:
       return "Modified";
+    case 3:
+      return "StorageClass";
     }
   }
 
@@ -436,14 +455,16 @@ void ItemModel::load(const QPersistentModelIndex &parentIndex, Item *parent) {
       } else {
         Item *old = parent->childs[it.value()];
         if (old->isFolder != item->isFolder ||
-            old->modified != item->modified || old->size != item->size) {
+            old->modified != item->modified || old->size != item->size ||
+            old->storageClass != item->storageClass) {
           old->state = Item::Unknown;
           old->isFolder = item->isFolder;
           old->modified = item->modified;
           old->size = item->size;
+          old->storageClass = item->storageClass;
           modified = true;
           emit dataChanged(createIndex(it.value(), 0, parent),
-                           createIndex(it.value(), 2, parent),
+                           createIndex(it.value(), 3, parent),
                            QVector<int>{Qt::DisplayRole});
         }
         existing.erase(it);
@@ -480,6 +501,40 @@ void ItemModel::load(const QPersistentModelIndex &parentIndex, Item *parent) {
                    static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
                        &QProcess::finished),
                    this, rcloneFinished);
+  QObject::connect(
+      lsl,
+      static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
+          &QProcess::finished),
+      this, [=](int code, QProcess::ExitStatus) {
+        if (code != 0) {
+          return;
+        }
+
+        QJsonParseError error;
+        const QJsonDocument document =
+            QJsonDocument::fromJson(lsl->readAllStandardOutput(), &error);
+        if (error.error != QJsonParseError::NoError || !document.isArray()) {
+          return;
+        }
+
+        for (const QJsonValue &value : document.array()) {
+          const QJsonObject object = value.toObject();
+          if (object.value("IsDir").toBool()) {
+            continue;
+          }
+
+          Item *child = new Item();
+          child->parent = parent;
+          child->name = object.value("Name").toString();
+          child->size = object.value("Size").toVariant().toULongLong();
+          child->modified = object.value("ModTime").toString().left(19);
+          child->modified.replace('T', ' ');
+          child->storageClass =
+              object.value("Metadata").toObject().value("tier").toString();
+
+          cache->append(child);
+        }
+      });
   QObject::connect(lsl,
                    static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
                        &QProcess::finished),
@@ -495,22 +550,6 @@ void ItemModel::load(const QPersistentModelIndex &parentIndex, Item *parent) {
         child->parent = parent;
         child->name = cap[2];
         child->modified = cap[1];
-
-        cache->append(child);
-      }
-    }
-  });
-
-  QObject::connect(lsl, &QProcess::readyRead, this, [=]() {
-    while (lsl->canReadLine()) {
-      if (mRegExpFile.exactMatch(lsl->readLine().trimmed())) {
-        QStringList cap = mRegExpFile.capturedTexts();
-
-        Item *child = new Item();
-        child->parent = parent;
-        child->name = cap[3];
-        child->modified = cap[2];
-        child->size = cap[1].toULongLong();
 
         cache->append(child);
       }
@@ -533,9 +572,11 @@ void ItemModel::load(const QPersistentModelIndex &parentIndex, Item *parent) {
                            << mRemote + ":" + parent->path.path(),
              QIODevice::ReadOnly);
   lsl->start(GetRclone(),
-             QStringList() << "lsl" << GetRcloneConf() << GetDriveSharedWithMe()
-                           << GetShowHidden() << "--max-depth"
-                           << "1" << GetDefaultRcloneOptionsList()
+             QStringList() << "lsjson" << GetRcloneConf()
+                           << GetDriveSharedWithMe() << GetShowHidden()
+                           << "--max-depth"
+                           << "1"
+                           << "--metadata" << GetDefaultRcloneOptionsList()
                            << mRemote + ":" + parent->path.path(),
              QIODevice::ReadOnly);
 }

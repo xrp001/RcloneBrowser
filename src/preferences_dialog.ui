@@ -298,22 +298,114 @@
            <number>12</number>
           </property>
           <item>
-           <widget class="QCheckBox" name="checkRcloneBrowserUpdates">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;check daily for Rclone Browser availability&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <layout class="QHBoxLayout" name="rcloneBrowserUpdatesLayout">
+            <item>
+             <widget class="QCheckBox" name="checkRcloneBrowserUpdates">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;check daily for Rclone Browser availability&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>Check for Rclone Browser updates</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="rcloneBrowserUpdatesSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="checkRcloneBrowserUpdatesNow">
+              <property name="text">
+               <string>Check Now</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="rcloneBrowserUpdateStatus">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <property name="text">
-             <string>Check for Rclone Browser updates</string>
+             <string/>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::TextBrowserInteraction</set>
+            </property>
+            <property name="openExternalLinks">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkRcloneUpdates">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;check daily for rclone availability&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <layout class="QHBoxLayout" name="rcloneUpdatesLayout">
+            <item>
+             <widget class="QCheckBox" name="checkRcloneUpdates">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;check daily for rclone availability&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>Check for rclone updates</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="rcloneUpdatesSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="checkRcloneUpdatesNow">
+              <property name="text">
+               <string>Check Now</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="rcloneUpdateStatus">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <property name="text">
-             <string>Check for rclone updates</string>
+             <string/>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::TextBrowserInteraction</set>
+            </property>
+            <property name="openExternalLinks">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
